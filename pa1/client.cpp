@@ -55,6 +55,10 @@ int createConnection(char* argv) {
         for (int i = 0; i < iterations; i++)
             for (int j = 0; j < nbufs; j++)
                 write(sd, databuf[j], bufsize); // sd: socket descriptor
+        for (int i = 0; i < nbufs; i++) {
+            delete[] databuf[i];
+        }
+        delete[] databuf;
         break;
     }
     case 2: {
@@ -70,6 +74,10 @@ int createConnection(char* argv) {
             }
             writev(sd, vector, nbufs); // sd: socket descriptor
         }
+        for (int i = 0; i < nbufs; i++) {
+            delete[] databuf[i];
+        }
+        delete[] databuf;
         break;
     }
     case 3: {
@@ -78,16 +86,14 @@ int createConnection(char* argv) {
             write(sd, databuf, nbufs * bufsize); // sd: socket descriptor
         }
         break;
+        delete[] databuf;
     }
     default:
         cout << "Bad type selection" << endl;
     }
 
     freeaddrinfo(servinfo); // free the linked-list
-    for (int i = 0; i < nbufs; i++) {
-        delete[] databuf[i];
-    }
-    delete[] databuf;
+    
 }
 
 
