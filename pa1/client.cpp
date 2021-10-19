@@ -1,4 +1,6 @@
 #include <iostream>
+#include <ostream>
+#include <cstring>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -12,8 +14,6 @@ int main(int argc, char* argv[]) {
         cerr << "Wrong number of arguments entered" << endl;
         return 1;
     }
-
-    
 }
 
 int createConnection(char* argv) {
@@ -29,7 +29,7 @@ int createConnection(char* argv) {
     hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
 
     
-    if ((status = getaddrinfo(argv[1], argv[0], &hints, &servinfo)) != 0) {
+    if ((status = getaddrinfo(&argv[1], &argv[0], &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
         return 1;
     }
@@ -45,28 +45,29 @@ int createConnection(char* argv) {
         cerr << "nbufs * bufsize must equal 1500" << endl;
         return 1;
     }
-    char** databuf = new char* [nbufs];
-    for (int i = 0; i < nbufs; i++) {
-        databuf[i] = new char[bufsize];
-    }
 
     switch ((int)argv[5]) {
     case 1:
+        char** databuf = new char* [nbufs];
+        for (int i = 0; i < nbufs; i++) {
+            databuf[i] = new char[bufsize];
+        }
         for (int i = 0; i < iterations; i++)
             for (int j = 0; j < nbufs; j++)
                 write(sd, databuf[j], bufsize); // sd: socket descriptor
         break;
     case 2:
-        /*for (int i = 0; i < iterations; i++) {
+        for (int i = 0; i < iterations; i++) {
             iovec vector[nbufs];
             for (int j = 0; j < nbufs; j++) {
                 vector[j].iov_base = databuf[j];
                 vector[j].iov_len = bufsize;
             }
             writev(sd, vector, nbufs); // sd: socket descriptor
-        }*/
+        }
         break;
     case 3:
+        char* databuf = new char[nbufs*bufsize];
         for (int i = 0; i < iterations; i++) {
             write(sd, databuf, nbufs * bufsize); // sd: socket descriptor
         }
