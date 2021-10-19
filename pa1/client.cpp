@@ -58,8 +58,12 @@ int createConnection(char* argv) {
         break;
     }
     case 2: {
+        char** databuf = new char* [nbufs];
+        for (int i = 0; i < nbufs; i++) {
+            databuf[i] = new char[bufsize];
+        }
         for (int i = 0; i < iterations; i++) {
-            iovec vector[nbufs];
+            iovec* vector = new iovec[nbufs];
             for (int j = 0; j < nbufs; j++) {
                 vector[j].iov_base = databuf[j];
                 vector[j].iov_len = bufsize;
