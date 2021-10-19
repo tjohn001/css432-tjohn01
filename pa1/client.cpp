@@ -47,7 +47,7 @@ int createConnection(char* argv) {
     }
 
     switch ((int)argv[5]) {
-    case 1:
+    case 1: {
         char** databuf = new char* [nbufs];
         for (int i = 0; i < nbufs; i++) {
             databuf[i] = new char[bufsize];
@@ -56,7 +56,8 @@ int createConnection(char* argv) {
             for (int j = 0; j < nbufs; j++)
                 write(sd, databuf[j], bufsize); // sd: socket descriptor
         break;
-    case 2:
+    }
+    case 2: {
         for (int i = 0; i < iterations; i++) {
             iovec vector[nbufs];
             for (int j = 0; j < nbufs; j++) {
@@ -66,12 +67,14 @@ int createConnection(char* argv) {
             writev(sd, vector, nbufs); // sd: socket descriptor
         }
         break;
-    case 3:
-        char* databuf = new char[nbufs*bufsize];
+    }
+    case 3: {
+        char* databuf = new char[nbufs * bufsize];
         for (int i = 0; i < iterations; i++) {
             write(sd, databuf, nbufs * bufsize); // sd: socket descriptor
         }
         break;
+    }
     default:
         cout << "Bad type selection" << endl;
     }
