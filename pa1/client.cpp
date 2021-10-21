@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <string>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -23,7 +24,7 @@ int createConnection(const char* address, const char* port, int iterations, int 
     hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
 
     
-    if ((status = getaddrinfo(&port, &address, &hints, &servinfo)) != 0) {
+    if ((status = getaddrinfo(address, port, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
         return 1;
     }
@@ -91,11 +92,11 @@ int main(int argc, char* argv[]) {
         cerr << "Wrong number of arguments entered" << endl;
         return 1;
     }
-    if (nbufs * bufsize != 1500) {
+    if (stoi(argv[3]) * stoi(argv[4]) != 1500) {
         cerr << "nbufs * bufsize must equal 1500" << endl;
         return 1;
     }
-    createConnection(argv[0], argv[1], (int)argv[2], (int)argv[3], (int)argv[4], (int)argv[5]);
+    createConnection(argv[0], argv[1], stoi(argv[2]), stoi(argv[3]), stoi(argv[4]), stoi(argv[5]));
 }
 
 
