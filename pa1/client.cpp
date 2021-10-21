@@ -5,19 +5,13 @@
 #include <netdb.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 
 using namespace std;
 
-int main(int argc, char* argv[]) {
-    if (argc != 6) {
-        cerr << "Wrong number of arguments entered" << endl;
-        return 1;
-    }
-}
-
-int createConnection(char* argv) {
-    const int iterations = (int)argv[2], nbufs = (int)argv[3], bufsize = (int)argv[4], type = (int)argv[5];
+int createConnection(const char* address, const char* port, int iterations, int nbufs, int bufsize, int type) {
+    //const int iterations = (int)argv[2], nbufs = (int)argv[3], bufsize = (int)argv[4], type = (int)argv[5];
 
     struct addrinfo hints;
     struct addrinfo* servinfo;
@@ -29,7 +23,7 @@ int createConnection(char* argv) {
     hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
 
     
-    if ((status = getaddrinfo(&argv[1], &argv[0], &hints, &servinfo)) != 0) {
+    if ((status = getaddrinfo(&port, &address, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
         return 1;
     }
@@ -41,12 +35,9 @@ int createConnection(char* argv) {
         return 1;
     }
 
-    if (nbufs * bufsize != 1500) {
-        cerr << "nbufs * bufsize must equal 1500" << endl;
-        return 1;
-    }
+    
 
-    switch ((int)argv[5]) {
+    switch (type) {
     case 1: {
         char** databuf = new char* [nbufs];
         for (int i = 0; i < nbufs; i++) {
@@ -93,7 +84,18 @@ int createConnection(char* argv) {
     }
 
     freeaddrinfo(servinfo); // free the linked-list
-    
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 6) {
+        cerr << "Wrong number of arguments entered" << endl;
+        return 1;
+    }
+    if (nbufs * bufsize != 1500) {
+        cerr << "nbufs * bufsize must equal 1500" << endl;
+        return 1;
+    }
+    createConnection(argv[0], argv[1], (int)argv[2], (int)argv[3], (int)argv[4], (int)argv[5]);
 }
 
 
