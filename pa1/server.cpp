@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <string>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -23,7 +24,7 @@ int recieve_data(void* ptr) {
     int databuf[BUFSIZE];
     struct timeval current_time;
     gettimeofday(&current_time, NULL);
-
+    int count = 0;
     for (int i = 0; i < args[1]; i++) {
         for (int nRead = 0;
             (nRead += read(args[0], databuf, BUFSIZE - nRead)) < BUFSIZE;
@@ -65,11 +66,13 @@ int main(int argc, char* argv[]) {
         struct sockaddr_storage newSockAddr;
         socklen_t newSockAddrSize = sizeof(newSockAddr);
         int newSd = accept(serverSd, (struct sockaddr*)&newSockAddr, &newSockAddrSize);
-        int args[] = { newSd, (int)argv[2] };
+        int args[] = { newSd, stoi(argv[2]) };
         pthread_t thread;
         int iret = pthread_create(&thread, NULL, recieve_data, (void*)args);
         pthread_join(thread, NULL);
+        close(newSd);
     }
-    close(newSd);
+    close(sd);
+    
 
 }
