@@ -1,6 +1,5 @@
 #include <iostream>
 #include <cstring>
-#include <string>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -15,7 +14,7 @@ int createConnection(const char* address, const char* port, int iterations, int 
     //const int iterations = (int)argv[2], nbufs = (int)argv[3], bufsize = (int)argv[4], type = (int)argv[5];
 
     struct addrinfo hints;
-    struct addrinfo* servinfo;
+    struct addrinfo* res;
     int status;
 
     memset(&hints, 0, sizeof hints); // make sure the struct is empty
@@ -24,14 +23,14 @@ int createConnection(const char* address, const char* port, int iterations, int 
     hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
 
     
-    if ((status = getaddrinfo(address, port, &hints, &servinfo)) != 0) {
+    if ((status = getaddrinfo(address, port, &hints, &res)) != 0) {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
         return 1;
     }
 
-    int sd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
+    int sd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
-    if (connect(sd, servinfo->ai_addr, servinfo->ai_addrlen) == -1) {
+    if (connect(sd, res->ai_addr, res->ai_addrlen) == -1) {
         cerr << "Connection error";
         return 1;
     }
@@ -84,7 +83,7 @@ int createConnection(const char* address, const char* port, int iterations, int 
         cout << "Bad type selection" << endl;
     }
 
-    freeaddrinfo(servinfo); // free the linked-list
+    freeaddrinfo(res); // free the linked-list
 }
 
 int main(int argc, char* argv[]) {

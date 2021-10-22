@@ -19,7 +19,7 @@
 using namespace std;
 const int BUFSIZE = 1500;
 
-int recieve_data(void* ptr) {
+int *recieve_data(void* ptr) {
     int* args = (int*)ptr;
     int databuf[BUFSIZE];
     struct timeval current_time;
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     }
 
     struct addrinfo hints;
-    struct addrinfo* servinfo;
+    struct addrinfo* res;
     int status;
 
     memset(&hints, 0, sizeof hints); // make sure the struct is empty
@@ -49,23 +49,23 @@ int main(int argc, char* argv[]) {
     hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
 
 
-    if ((status = getaddrinfo(NULL, &argv[0], &hints, &servinfo)) != 0) {
+    if ((status = getaddrinfo(NULL, argv[0], &hints, &res)) != 0) {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
         return 1;
     }
 
-    int sd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
+    int sd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
     const int yes = 0;
     setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(yes));
 
-    bind(sd, servinfo->ai_addr, servinfo->ai_addrlen);
+    bind(sd, res->ai_addr, res->ai_addrlen);
     listen(sd, 20);
 
     while (true) {
         struct sockaddr_storage newSockAddr;
         socklen_t newSockAddrSize = sizeof(newSockAddr);
-        int newSd = accept(serverSd, (struct sockaddr*)&newSockAddr, &newSockAddrSize);
+        int newSd = accept(sd, (struct sockaddr*)&newSockAddr, &newSockAddrSize);
         int args[] = { newSd, stoi(argv[2]) };
         pthread_t thread;
         int iret = pthread_create(&thread, NULL, recieve_data, (void*)args);
@@ -74,5 +74,5 @@ int main(int argc, char* argv[]) {
     }
     close(sd);
     
-
+    return 0;
 }
