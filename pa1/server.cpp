@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
         int newSd = accept(sd, (struct sockaddr*)&newSockAddr, &newSockAddrSize);
         int args[] = { newSd, stoi(argv[2]) };
         pthread_t thread;
-        int iret = pthread_create(&thread, NULL, recieve_data, (void*)args);
+        int iret = pthread_create(&thread, NULL, &recieve_data, (void*)args);
         pthread_join(thread, NULL);
         close(newSd);
     }
