@@ -28,7 +28,9 @@ void *recieve_data(void* ptr) {
     for (int i = 0; i < args[1]; i++) {
         for (int nRead = 0;
             (nRead += read(args[0], databuf, BUFSIZE - nRead)) < BUFSIZE;
-            ++count);
+            ++count) {
+            cout << nRead;
+        }
     }
     close(args[0]);
 }
