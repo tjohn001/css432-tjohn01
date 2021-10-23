@@ -31,7 +31,7 @@ void *recieve_data(void* ptr) {
             ++count);
     }
     close(args[0]);
-    return &args[0];
+    return (void*)&args[0];
 }
 
 int main(int argc, char* argv[]) {
