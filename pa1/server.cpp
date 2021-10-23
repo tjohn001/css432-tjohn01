@@ -29,7 +29,7 @@ void *recieve_data(void* ptr) {
         for (int nRead = 0;
             (nRead += read(args[0], databuf, BUFSIZE - nRead)) < BUFSIZE;
             ++count) {
-            cout << nRead;
+            cout << nRead << endl;
         }
     }
     close(args[0]);
@@ -65,10 +65,12 @@ int main(int argc, char* argv[]) {
     listen(sd, 20);
 
     while (true) {
+        cout << "looking for connection" << endl;
         struct sockaddr_storage newSockAddr;
         socklen_t newSockAddrSize = sizeof(newSockAddr);
         int newSd = accept(sd, (struct sockaddr*)&newSockAddr, &newSockAddrSize);
         int args[] = { newSd, stoi(argv[3]) };
+        cout << "connection made" << endl;
         pthread_t thread;
         int iret = pthread_create(&thread, NULL, recieve_data, (void*)args);
         //pthread_join(thread, NULL);
