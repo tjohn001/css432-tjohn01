@@ -10,7 +10,7 @@
 
 using namespace std;
 
-int createConnection(const char* address, const char* port, int iterations, int nbufs, int bufsize, int type) {
+int createConnection(const char* port, const char* address, int iterations, int nbufs, int bufsize, int type) {
     //const int iterations = (int)argv[2], nbufs = (int)argv[3], bufsize = (int)argv[4], type = (int)argv[5];
 
     struct addrinfo hints;
@@ -20,7 +20,6 @@ int createConnection(const char* address, const char* port, int iterations, int 
     memset(&hints, 0, sizeof hints); // make sure the struct is empty
     hints.ai_family = AF_UNSPEC;     // don't care IPv4 or IPv6
     hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
-    hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
 
     
     if ((status = getaddrinfo(address, port, &hints, &res)) != 0) {
@@ -35,7 +34,6 @@ int createConnection(const char* address, const char* port, int iterations, int 
         return 1;
     }
 
-    
 
     switch (type) {
     case 1: {
