@@ -82,8 +82,8 @@ int createConnection(const char* address, const char* port, int iterations, int 
     default:
         cout << "Bad type selection" << endl;
     }
-
     freeaddrinfo(res); // free the linked-list
+    return 0;
 }
 
 int main(int argc, char* argv[]) {
