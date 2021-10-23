@@ -96,6 +96,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     createConnection(argv[0], argv[1], stoi(argv[2]), stoi(argv[3]), stoi(argv[4]), stoi(argv[5]));
+    return 0;
 }
 
 

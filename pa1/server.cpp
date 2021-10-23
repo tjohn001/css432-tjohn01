@@ -30,8 +30,8 @@ void *recieve_data(void* ptr) {
             (nRead += read(args[0], databuf, BUFSIZE - nRead)) < BUFSIZE;
             ++count);
     }
-    close(args[1]);
-    return;
+    close(args[0]);
+    return &args[0];
 }
 
 int main(int argc, char* argv[]) {
