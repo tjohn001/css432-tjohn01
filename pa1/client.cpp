@@ -87,15 +87,15 @@ int createConnection(const char* address, const char* port, int iterations, int 
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 6) {
+    if (argc != 7) {
         cerr << "Wrong number of arguments entered" << endl;
-        return 1;
+        exit(1);
     }
-    if (stoi(argv[3]) * stoi(argv[4]) != 1500) {
+    if (stoi(argv[4]) * stoi(argv[5]) != 1500) {
         cerr << "nbufs * bufsize must equal 1500" << endl;
-        return 1;
+        exit(1);
     }
-    createConnection(argv[0], argv[1], stoi(argv[2]), stoi(argv[3]), stoi(argv[4]), stoi(argv[5]));
+    createConnection(argv[1], argv[2], stoi(argv[3]), stoi(argv[4]), stoi(argv[5]), stoi(argv[6]));
     return 0;
 }
 

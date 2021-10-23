@@ -35,7 +35,7 @@ void *recieve_data(void* ptr) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
+    if (argc != 3) {
         cerr << "Wrong number of arguments entered" << endl;
         return 1;
     }
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
     hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
 
 
-    if ((status = getaddrinfo(NULL, argv[0], &hints, &res)) != 0) {
+    if ((status = getaddrinfo(NULL, argv[1], &hints, &res)) != 0) {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
         return 1;
     }
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
         struct sockaddr_storage newSockAddr;
         socklen_t newSockAddrSize = sizeof(newSockAddr);
         int newSd = accept(sd, (struct sockaddr*)&newSockAddr, &newSockAddrSize);
-        int args[] = { newSd, stoi(argv[2]) };
+        int args[] = { newSd, stoi(argv[3]) };
         pthread_t thread;
         int iret = pthread_create(&thread, NULL, recieve_data, (void*)args);
         //pthread_join(thread, NULL);
