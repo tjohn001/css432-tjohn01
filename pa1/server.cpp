@@ -30,7 +30,7 @@ void *recieve_data(void* ptr) {
             (nRead += read(args[0], databuf, BUFSIZE - nRead)) < BUFSIZE;
             ++count);
     }
-
+    close(args[1]);
 }
 
 int main(int argc, char* argv[]) {
@@ -69,10 +69,8 @@ int main(int argc, char* argv[]) {
         int args[] = { newSd, stoi(argv[2]) };
         pthread_t thread;
         int iret = pthread_create(&thread, NULL, recieve_data, (void*)args);
-        pthread_join(thread, NULL);
-        close(newSd);
+        //pthread_join(thread, NULL);
     }
     close(sd);
-    
     return 0;
 }
