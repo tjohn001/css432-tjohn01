@@ -65,12 +65,10 @@ int main(int argc, char* argv[]) {
     listen(sd, 20);
 
     while (true) {
-        cout << "looking for connection" << endl;
         struct sockaddr_storage newSockAddr;
         socklen_t newSockAddrSize = sizeof(newSockAddr);
         int newSd = accept(sd, (struct sockaddr*)&newSockAddr, &newSockAddrSize);
-        int args[] = { newSd, stoi(argv[3]) };
-        cout << "connection made" << endl;
+        int args[] = { newSd, stoi(argv[2]) };
         pthread_t thread;
         int iret = pthread_create(&thread, NULL, recieve_data, (void*)args);
         //pthread_join(thread, NULL);
