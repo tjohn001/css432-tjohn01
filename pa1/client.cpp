@@ -34,7 +34,7 @@ int createConnection(const char* port, const char* address, int iterations, int 
         return 1;
     }
 
-
+    cout << "connection made" << endl;
     switch (type) {
     case 1: {
         char** databuf = new char* [nbufs];
@@ -80,6 +80,8 @@ int createConnection(const char* port, const char* address, int iterations, int 
     default:
         cout << "Bad type selection" << endl;
     }
+    close(sd);
+    cout << "connection ended" << endl;
     freeaddrinfo(res); // free the linked-list
     return 0;
 }

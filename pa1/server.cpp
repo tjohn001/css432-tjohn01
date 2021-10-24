@@ -20,6 +20,7 @@ using namespace std;
 const int BUFSIZE = 1500;
 
 void *recieve_data(void* ptr) {
+    cout << "thread started";
     int* args = (int*)ptr;
     int databuf[BUFSIZE];
     struct timeval current_time;
