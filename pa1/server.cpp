@@ -20,7 +20,7 @@ using namespace std;
 const int BUFSIZE = 1500;
 
 void *recieve_data(void* ptr) {
-    cout << "thread started";
+    cout << "thread started" << endl;
     int* args = (int*)ptr;
     int databuf[BUFSIZE];
     struct timeval current_time;
@@ -33,6 +33,7 @@ void *recieve_data(void* ptr) {
             cout << nRead << endl;
         }
     }
+    cout << "thread end" << endl;
     close(args[0]);
 }
 
@@ -71,7 +72,7 @@ int main(int argc, char* argv[]) {
         int newSd = accept(sd, (struct sockaddr*)&newSockAddr, &newSockAddrSize);
         int args[] = { newSd, stoi(argv[2]) };
         pthread_t thread;
-        int iret = pthread_create(&thread, NULL, recieve_data, (void*)args);
+        int iret = pthread_create(&thread, NULL, &recieve_data, (void*)args);
         //pthread_join(thread, NULL);
     }
     close(sd);
