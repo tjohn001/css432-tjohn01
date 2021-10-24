@@ -80,7 +80,6 @@ int createConnection(const char* port, const char* address, int iterations, int 
     default:
         cout << "Bad type selection" << endl;
     }
-    close(sd);
     cout << "connection ended" << endl;
     freeaddrinfo(res); // free the linked-list
     return 0;
