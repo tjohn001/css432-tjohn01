@@ -33,7 +33,8 @@ int createConnection(const char* port, const char* address, int iterations, int 
         cerr << "Connection error";
         return 1;
     }
-    cout << "connection made" << endl;
+    cout << "iterations = " << iterations << ", nbufs =" << nbufs << ", bufsize = " 
+        << bufsize << " type = " << type << endl;
     struct timeval start_time, lap_time, end_time;
     switch (type) {
     case 1: {
@@ -49,7 +50,7 @@ int createConnection(const char* port, const char* address, int iterations, int 
         int nReads;
         read(sd, nReads, sizeof(int));
         gettimeofday(&end_time, NULL);
-        cout << "data receiving time = " << lap_time.tv_usec - start_time.tv_usec << "usec, ";
+        cout << "Test 1: data receiving time = " << lap_time.tv_usec - start_time.tv_usec << "usec, ";
         cout << "round trip time = " << end_time.tv_usec - lap_time.tv_usec << "usec, ";
         cout << "#reads = " << nReads << endl;
 
@@ -77,7 +78,7 @@ int createConnection(const char* port, const char* address, int iterations, int 
         int nReads;
         read(sd, nReads, sizeof(int));
         gettimeofday(&end_time, NULL);
-        cout << "data receiving time = " << lap_time.tv_usec - start_time.tv_usec << "usec, ";
+        cout << "Test 2: data receiving time = " << lap_time.tv_usec - start_time.tv_usec << "usec, ";
         cout << "round trip time = " << end_time.tv_usec - lap_time.tv_usec << "usec, ";
         cout << "#reads = " << nReads << endl;
         for (int i = 0; i < nbufs; i++) {
@@ -96,7 +97,7 @@ int createConnection(const char* port, const char* address, int iterations, int 
         int nReads;
         read(sd, nReads, sizeof(int));
         gettimeofday(&end_time, NULL);
-        cout << "data receiving time = " << lap_time.tv_usec - start_time.tv_usec << "usec, ";
+        cout << "Test 3: data receiving time = " << lap_time.tv_usec - start_time.tv_usec << "usec, ";
         cout << "round trip time = " << end_time.tv_usec - lap_time.tv_usec << "usec, ";
         cout << "#reads = " << nReads << endl;
         delete[] databuf;
