@@ -33,17 +33,26 @@ int createConnection(const char* port, const char* address, int iterations, int 
         cerr << "Connection error";
         return 1;
     }
-
     cout << "connection made" << endl;
+    struct timeval start_time, lap_time, end_time;
     switch (type) {
     case 1: {
         char** databuf = new char* [nbufs];
         for (int i = 0; i < nbufs; i++) {
             databuf[i] = new char[bufsize];
         }
+        gettimeofday(&start_time, NULL);
         for (int i = 0; i < iterations; i++)
             for (int j = 0; j < nbufs; j++)
                 write(sd, databuf[j], bufsize); // sd: socket descriptor
+        gettimeofday(&lap_time, NULL);
+        int nReads;
+        read(sd, nReads, sizeof(int));
+        gettimeofday(&end_time, NULL);
+        cout << "data receiving time = " << lap_time.tv_usec - start_time.tv_usec << "usec, ";
+        cout << "round trip time = " << end_time.tv_usec - lap_time.tv_usec << "usec, ";
+        cout << "#reads = " << nReads << endl;
+
         for (int i = 0; i < nbufs; i++) {
             delete[] databuf[i];
         }
@@ -55,6 +64,7 @@ int createConnection(const char* port, const char* address, int iterations, int 
         for (int i = 0; i < nbufs; i++) {
             databuf[i] = new char[bufsize];
         }
+        gettimeofday(&start_time, NULL);
         for (int i = 0; i < iterations; i++) {
             iovec* vector = new iovec[nbufs];
             for (int j = 0; j < nbufs; j++) {
@@ -63,6 +73,13 @@ int createConnection(const char* port, const char* address, int iterations, int 
             }
             writev(sd, vector, nbufs); // sd: socket descriptor
         }
+        gettimeofday(&lap_time, NULL);
+        int nReads;
+        read(sd, nReads, sizeof(int));
+        gettimeofday(&end_time, NULL);
+        cout << "data receiving time = " << lap_time.tv_usec - start_time.tv_usec << "usec, ";
+        cout << "round trip time = " << end_time.tv_usec - lap_time.tv_usec << "usec, ";
+        cout << "#reads = " << nReads << endl;
         for (int i = 0; i < nbufs; i++) {
             delete[] databuf[i];
         }
@@ -71,16 +88,25 @@ int createConnection(const char* port, const char* address, int iterations, int 
     }
     case 3: {
         char* databuf = new char[nbufs * bufsize];
+        gettimeofday(&start_time, NULL);
         for (int i = 0; i < iterations; i++) {
             write(sd, databuf, nbufs * bufsize); // sd: socket descriptor
         }
-        break;
+        gettimeofday(&lap_time, NULL);
+        int nReads;
+        read(sd, nReads, sizeof(int));
+        gettimeofday(&end_time, NULL);
+        cout << "data receiving time = " << lap_time.tv_usec - start_time.tv_usec << "usec, ";
+        cout << "round trip time = " << end_time.tv_usec - lap_time.tv_usec << "usec, ";
+        cout << "#reads = " << nReads << endl;
         delete[] databuf;
+        break;
     }
     default:
         cout << "Bad type selection" << endl;
     }
-    cout << "connection ended" << endl;
+    int count;
+    read(sd, count, sizeof(int));
     freeaddrinfo(res); // free the linked-list
     return 0;
 }

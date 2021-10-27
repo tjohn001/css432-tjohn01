@@ -20,20 +20,20 @@ using namespace std;
 const int BUFSIZE = 1500;
 
 void *recieve_data(void* ptr) {
-    cout << "thread started" << endl;
     int* args = (int*)ptr;
     int databuf[BUFSIZE];
-    struct timeval current_time;
-    gettimeofday(&current_time, NULL);
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, NULL);
     int count = 0;
     for (int i = 0; i < args[1]; i++) {
         for (int nRead = 0;
             (nRead += read(args[0], databuf, BUFSIZE - nRead)) < BUFSIZE;
-            ++count) {
-            cout << nRead << endl;
-        }
+            ++count);
     }
-    cout << "thread end" << endl;
+    gettimeofday(&end_time, NULL);
+    cout << "data receiving time = " << end_time.tv_usec - start_time.tv_usec << "usec" << endl;
+    int reads;
+    write(args[0], count, sizeof(int));
     close(args[0]);
 }
 
