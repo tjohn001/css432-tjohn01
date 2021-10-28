@@ -86,8 +86,8 @@ int createConnection(const char* port, const char* address, int iterations, int 
         cout << "Bad type selection" << endl;
     }
     
-    cout << "data receiving time = " << lap_time.tv_usec - start_time.tv_usec << " usec, ";
-    cout << "round trip time = " << end_time.tv_usec - lap_time.tv_usec << " usec, ";
+    cout << "data receiving time = " << (lap_time.tv_sec * 1e6 + lap_time.tv_usec) - (start_time.tv_sec * 1e6 + start_time.tv_usec) << " usec, ";
+    cout << "round trip time = " << (end_time.tv_sec * 1e6 + end_time.tv_usec) - (lap_time.tv_sec * 1e6 + lap_time.tv_usec) << " usec, ";
     cout << "#reads = " << nReads << " times" << endl;
 
     for (int i = 0; i < nbufs; i++) {
