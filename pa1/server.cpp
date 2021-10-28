@@ -27,10 +27,10 @@ void *recieve_data(void* ptr) {
     int count = 0;
     int readVal = 0;
     for (int i = 0; i < args[1]; i++) {
-        /*for (int nRead = 0;
+        for (int nRead = 0;
             (nRead += read(args[0], databuf, BUFSIZE - nRead)) < BUFSIZE;
-            ++count);*/
-        for (int nRead = 0; nRead < BUFSIZE; count++) {
+            ++count);
+        /*for (int nRead = 0; nRead < BUFSIZE; count++) {
             readVal = read(args[0], databuf, BUFSIZE - nRead);
             if (read >= 0) {
                 nRead += readVal;
@@ -39,7 +39,7 @@ void *recieve_data(void* ptr) {
                 cout << "read error";
                 break;
             }
-        }
+        }*/
     }
     gettimeofday(&end_time, NULL);
     cout << "data receiving time = " << end_time.tv_usec - start_time.tv_usec << "usec" << endl;
