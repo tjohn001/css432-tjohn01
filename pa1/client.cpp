@@ -88,7 +88,11 @@ int createConnection(const char* port, const char* address, int iterations, int 
         break;
     }
     case 3: {
-        char* databuf = new char[nbufs * bufsize];
+        //char* databuf = new char[nbufs * bufsize];
+        char** databuf = new char* [nbufs];
+        for (int i = 0; i < nbufs; i++) {
+            databuf[i] = new char[bufsize];
+        }
         gettimeofday(&start_time, NULL);
         for (int i = 0; i < iterations; i++) {
             write(sd, databuf, nbufs * bufsize); // sd: socket descriptor
