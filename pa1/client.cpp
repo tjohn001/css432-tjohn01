@@ -101,9 +101,9 @@ int createConnection(const char* port, const char* address, int iterations, int 
         int nReads;
         read(sd, &nReads, sizeof(int));
         gettimeofday(&end_time, NULL);
-        cout << "Test 3: data receiving time = " << lap_time.tv_usec - start_time.tv_usec << "usec, ";
-        cout << "round trip time = " << end_time.tv_usec - lap_time.tv_usec << "usec, ";
-        cout << "#reads = " << nReads << endl;
+        cout << "Test 3: data receiving time = " << lap_time.tv_usec - start_time.tv_usec << " usec, ";
+        cout << "round trip time = " << end_time.tv_usec - lap_time.tv_usec << " usec, ";
+        cout << "#reads = " << nReads << " times" << endl;
         delete[] databuf;
         break;
     }
