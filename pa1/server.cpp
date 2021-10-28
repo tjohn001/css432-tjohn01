@@ -27,7 +27,7 @@ void *recieve_data(void* ptr) {
     int count = 0;
     for (int i = 0; i < args[1]; i++) {
         for (int nRead = 0;
-            (nRead += read(args[0], databuf, BUFSIZE - nRead)) < BUFSIZE;
+            (cout << (nRead += read(args[0], databuf, BUFSIZE - nRead))) < BUFSIZE;
             ++count);
     }
     gettimeofday(&end_time, NULL);
