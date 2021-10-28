@@ -32,7 +32,7 @@ void *recieve_data(void* ptr) {
             ++count);
     }
     gettimeofday(&end_time, NULL);
-    cout << "data receiving time = " << (end_time.tv_sec * 1e6 + end_time.tv_usec) - (start_time.tv_sec * 1e6 + start.tv_usec) << "usec" << endl;
+    cout << "data receiving time = " << (end_time.tv_sec * 1e6 + end_time.tv_usec) - (start_time.tv_sec * 1e6 + start_time.tv_usec) << "usec" << endl;
     write(args[0], &count, sizeof(int));
     close(args[0]);
 }
