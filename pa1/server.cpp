@@ -37,8 +37,8 @@ void *recieve_data(void* ptr) {
             }
             else {
                 cout << "read error";
-                close(sd);
-                return;
+                close(args[0]);
+                return &recieve_data;
             }
         }
     }
