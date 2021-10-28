@@ -45,7 +45,7 @@ int createConnection(const char* port, const char* address, int iterations, int 
         gettimeofday(&start_time, NULL);
         for (int i = 0; i < iterations; i++)
             for (int j = 0; j < nbufs; j++)
-                write(sd, *databuf[j], bufsize); // sd: socket descriptor
+                write(sd, databuf[j], bufsize); // sd: socket descriptor
         gettimeofday(&lap_time, NULL);
         int nReads;
         read(sd, &nReads, sizeof(int));
@@ -91,11 +91,11 @@ int createConnection(const char* port, const char* address, int iterations, int 
         char* databuf = new char[nbufs * bufsize];
         gettimeofday(&start_time, NULL);
         for (int i = 0; i < iterations; i++) {
-            write(sd, *databuf, nbufs * bufsize); // sd: socket descriptor
+            write(sd, databuf, nbufs * bufsize); // sd: socket descriptor
         }
         gettimeofday(&lap_time, NULL);
         int nReads;
-        read(sd, nReads, sizeof(int));
+        read(sd, &nReads, sizeof(int));
         gettimeofday(&end_time, NULL);
         cout << "Test 3: data receiving time = " << lap_time.tv_usec - start_time.tv_usec << "usec, ";
         cout << "round trip time = " << end_time.tv_usec - lap_time.tv_usec << "usec, ";
