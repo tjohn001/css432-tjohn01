@@ -1,9 +1,3 @@
-/*
-* Taylor Johnston
-* Server side application that recieves a given iterations of 1500 bytes on a given port
-* Outputs the time taken to recieve the data
-*/
-
 #include <iostream>
 #include <cstring>
 #include <string>
@@ -28,20 +22,14 @@ const int BUFSIZE = 1500; //size of buffer to recieve
 //thread to read data, takes a pointer to a 2 element int array
 //ptr[0] is the file descriptor of the socket to read from
 //ptr[1] is the number of iterations
-void *recieve_data(void* ptr) {
+void* recieve_data(void* ptr) {
     int* args = (int*)ptr; //cast paramaters back to int array
     int databuf[BUFSIZE]; //allocate array to hold buffer
-    struct timeval start_time, end_time; //timer
-    gettimeofday(&start_time, NULL); //start timer
-    int count = 0;
-    int readVal = 0;
     for (int i = 0; i < args[1]; i++) {
         for (int nRead = 0;
             (nRead += read(args[0], databuf, BUFSIZE - nRead)) < BUFSIZE; //read bytesfrom fd into databuf up to BUFFSIZE
             ++count);
     }
-    gettimeofday(&end_time, NULL); //stop timer
-    cout << "data receiving time = " << (end_time.tv_sec * 1e6 + end_time.tv_usec) - (start_time.tv_sec * 1e6 + start_time.tv_usec) << "usec" << endl;
     write(args[0], &count, sizeof(int)); //send number of writes made
     close(args[0]); //close socket fd
 }
@@ -54,13 +42,13 @@ int main(int argc, char* argv[]) {
     }
 
     //setup server socket
-    struct addrinfo hints; 
+    struct addrinfo hints;
     struct addrinfo* res;
     int status;
 
     memset(&hints, 0, sizeof hints); // make sure the struct is empty
     hints.ai_family = AF_UNSPEC;     // don't care IPv4 or IPv6
-    hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
+    hints.ai_socktype = SOCK_DGRAM; // TCP stream sockets
     hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
 
     //add server address info to res
@@ -69,7 +57,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    
+
     int sd = socket(res->ai_family, res->ai_socktype, res->ai_protocol); //socket file descriptor
 
     const int yes = 0;
