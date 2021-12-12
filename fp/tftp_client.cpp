@@ -11,13 +11,14 @@
 #include <sys/uio.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <bitset>
 
 
 using namespace std;
 
 //method for handling creating connection to server
 //takes in port #, server address, number of iterations to run, number of buffers, size of buffers, and the type of sending method to use
-int createConnection(const char* port, const char* address, const char* filename) {
+int createConnection(const char* port, const char* address, const char* filename, const int opcode, const char* mode) {
 
     //setup server socket
     struct addrinfo hints;
@@ -36,18 +37,20 @@ int createConnection(const char* port, const char* address, const char* filename
 
     int sd = socket(res->ai_family, res->ai_socktype, res->ai_protocol); //socket file descriptor
 
-    //connect to socket
-    if (connect(sd, res->ai_addr, res->ai_addrlen) == -1) {
-        cerr << "Connection error";
-        return 1;
-    }
+    char buffer[516];
 
-    //deallocate buffer
-    for (int i = 0; i < nbufs; i++) {
-        delete[] databuf[i];
-    }
-    delete[] databuf;
-    freeaddrinfo(res); // free the linked-list
+    char* ptr = buffer+1;
+    *ptr = opcode;
+    ptr++;
+    copy(filename, filename + sizeof(filename), ptr);
+    ptr += sizeof(filename);
+    *ptr = 0;
+    ptr++;
+    copy(mode, mode + sizeof(mode), ptr);
+    ptr += sizeof(mode);
+    
+
+    
     return 0;
 }
 
