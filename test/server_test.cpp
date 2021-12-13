@@ -36,9 +36,10 @@ int main() {
     cliSize = sizeof(client);
 
     char buffer[7];
-
-    int n = recvfrom(sd, buffer, 7, 0, (struct sockaddr*)&client, (socklen_t*)&cliSize);
-    string res(buffer);
-    cout << res;
-    sendto(sd, buffer, 7, 0, (struct sockaddr*)&client, cliSize);
+    while (true) {
+        int n = recvfrom(sd, buffer, 7, 0, (struct sockaddr*)&client, (socklen_t*)&cliSize);
+        string res(buffer);
+        cout << res;
+        sendto(sd, buffer, 7, 0, (struct sockaddr*)&client, cliSize);
+    }
 }
