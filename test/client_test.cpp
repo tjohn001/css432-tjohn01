@@ -1,48 +1,49 @@
-#include <iostream>
-#include <cstring>
+// Client side implementation of UDP client-server model
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netdb.h>
-#include <sys/uio.h>
-#include <unistd.h>
-#include <fstream>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
-using namespace std;
+#define PORT	 8080
+#define MAXLINE 1024
 
-int PORT = 545949;
-
+// Driver code
 int main() {
-    //struct addrinfo hints;
-    //struct addrinfo_in *server, *client;
-    struct sockaddr_in server;
-    int status, sersize;
+	int sockfd;
+	char buffer[MAXLINE];
+	char* hello = "Hello from client";
+	struct sockaddr_in	 servaddr;
 
-    memset(&server, 0, sizeof(server));
-    //memset(&client, 0, sizeof(client)); // make sure the struct is empty
-    //hints.ai_family = AF_UNSPEC;     // don't care IPv4 or IPv6
-    //hints.ai_socktype = SOCK_DGRAM; // UPD datagram
+	// Creating socket file descriptor
+	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+		perror("socket creation failed");
+		exit(EXIT_FAILURE);
+	}
 
-    /*//add server address info to server
-    if ((status = getaddrinfo("csslab9.uwb.edu", "54988", &hints, &server)) != 0) {
-        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
-        return 1;
-    }*/
+	memset(&servaddr, 0, sizeof(servaddr));
 
-    int sd = socket(AF_INET, SOCK_DGRAM, 0); //socket file descriptor
+	// Filling server information
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_port = htons(PORT);
+	servaddr.sin_addr.s_addr = INADDR_ANY;
 
-    cout << sd << endl;
+	int n, len;
 
-    server.sin_family = AF_INET;
-    server.sin_port = htons(PORT);
-    server.sin_addr.s_addr = INADDR_ANY;
+	sendto(sockfd, (const char*)hello, strlen(hello),
+		MSG_CONFIRM, (const struct sockaddr*)&servaddr,
+		sizeof(servaddr));
+	printf("Hello message sent.\n");
 
-    sersize = sizeof(server);
+	n = recvfrom(sockfd, (char*)buffer, MAXLINE,
+		MSG_WAITALL, (struct sockaddr*)&servaddr,
+		(socklen_t*)&len);
+	buffer[n] = '\0';
+	printf("Server : %s\n", buffer);
 
-    char* buffer = "message";
-
-    sendto(sd, buffer, 7, 0, (struct sockaddr*)&server, sersize);
-    cout << "message sent" << endl;
-    int n = recvfrom(sd, buffer, 7, 0, (struct sockaddr*)&server, (socklen_t*)&sersize);
-    string res(buffer);
-    cout << res;
+	close(sockfd);
+	return 0;
 }
