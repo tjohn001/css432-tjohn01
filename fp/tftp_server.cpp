@@ -32,7 +32,7 @@ const int BUFSIZE = 1500; //size of buffer to recieve
     close(args[0]); //close socket fd
 
     int sd = *(int*)ptr;
-    struct addrinfo* res = (addrinfo*)(ptr + sizeof(int));
+    struct addrinfo* client = (addrinfo*)(ptr + sizeof(int));
     char buffer[516];
     recvfrom()
 
@@ -47,7 +47,8 @@ int main(int argc, char* argv[]) {
 
     //setup server socket
     struct addrinfo hints;
-    struct addrinfo* res;
+    struct addrinfo* client;//*server, *client;
+    int clientSize;
     int status;
 
     memset(&hints, 0, sizeof hints); // make sure the struct is empty
@@ -55,23 +56,25 @@ int main(int argc, char* argv[]) {
     hints.ai_socktype = SOCK_DGRAM; // TCP stream sockets
     hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
 
-    //add server address info to res
-    if ((status = getaddrinfo(NULL, argv[1], &hints, &res)) != 0) {
+    //add server address info to server
+    if ((status = getaddrinfo(NULL, "54949", &hints, &client)) != 0) {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
         return 1;
     }
 
 
-    int sd = socket(res->ai_family, res->ai_socktype, res->ai_protocol); //socket file descriptor
+    int sd = socket(client->ai_family, client->ai_socktype, client->ai_protocol); //socket file descriptor
 
     const int yes = 0;
     setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(yes)); //setup socket
 
-    bind(sd, res->ai_addr, res->ai_addrlen); //bind socket
+    bind(sd, client->ai_addr, client->ai_addrlen); //bind socket
     
+    clientSize = sizeof(client);
+
     char buffer[516];
     
-    int bytesRead = recvfrom(sd, buffer, 516, 0, res, sizeof(res));
+    int bytesRead = recvfrom(sd, buffer, 516, 0, (sockaddr *) client, (socklen_t*) sizeof(client));
     //TODO: add check that ptr < bytes read
     char* ptr = buffer + 1;
     short opcode = *ptr;
@@ -88,6 +91,7 @@ int main(int argc, char* argv[]) {
         file.seekg(0, ios::beg);
         int size = end - file.tellg();
         //ptr = buffer;
+        char ack[4];
         for (int block = 1; file.tellg() < end; block++) {
             *(buffer) = 3;
             *(buffer + 2) = block;
@@ -97,24 +101,24 @@ int main(int argc, char* argv[]) {
             else
                 toRead = 512;
             file.read(buffer + 4, toRead);
-            sendto(sd, buffer, 4 + toRead, 0, res, sizeof(res));
+            sendto(sd, buffer, 4 + toRead, 0, (sockaddr*)client, clientSize);
 
-            bytesRead = recvfrom(sd, ack, 4, 0, res, sizeof(res));
+            bytesRead = recvfrom(sd, ack, 4, 0, (sockaddr*)client, (socklen_t*) &clientSize);
             if (bytesRead != 4) {
                 cout << "packet error";
             }
             else if (*ack != 4) {
                 cout << "wrong packet type";
             }
-            else if (*(ack + 2) != block) {
+            else if (*((short*)ack + 2) != block) {
                 cout << "wrong ack #";
             }
 
             //if last block is exactly 512 bytes, send exta size 0 block
             if (block * 512 == size) {
                 *(buffer + 2) = block + 1;
-                sendto(sd, buffer, 4, 0, res, sizeof(res));
-                bytesRead = recvfrom(sd, ack, 4, 0, res, sizeof(res));
+                sendto(sd, buffer, 4, 0, (sockaddr*)client, clientSize);
+                bytesRead = recvfrom(sd, ack, 4, 0, (sockaddr*)client, (socklen_t*)&clientSize);
                 if (bytesRead != 4) {
                     cout << "packet error";
                 }
@@ -135,9 +139,9 @@ int main(int argc, char* argv[]) {
         char ack[4];
         memset(&ack, 0, sizeof(ack));
         *(ack + 1) = 4;
-        sendto(sd, ack, 4, 0, res, sizeof(res));
+        sendto(sd, ack, 4, 0, (sockaddr*)client, clientSize);
         do {
-            int bytesRead = recvfrom(sd, buffer, 516, 0, res, sizeof(res));
+            int bytesRead = recvfrom(sd, buffer, 516, 0, (sockaddr*)client, (socklen_t*)&clientSize);
             if (bytesRead < 2) {
                 cout << "read error";
                 data = 0;
@@ -160,7 +164,7 @@ int main(int argc, char* argv[]) {
                 memset(&ack, 0, sizeof(ack));
                 *(ack + 1) = 4;
                 bcopy(&block, ack + 2, 2);
-                sendto(sd, ack, 4, 0, res, sizeof(res));
+                sendto(sd, ack, 4, 0, (sockaddr*)client, clientSize);
                 /* resend ack on timeout*/
             }
         } while (data == 512);
