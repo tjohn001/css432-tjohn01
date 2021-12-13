@@ -9,7 +9,7 @@
 
 using namespace std;
 
-int PORT = 545948;
+int PORT = 545949;
 
 int main() {
     //struct addrinfo hints;
@@ -30,6 +30,8 @@ int main() {
 
     int sd = socket(AF_INET, SOCK_DGRAM, 0); //socket file descriptor
 
+    cout << sd << endl;
+
     server.sin_family = AF_INET;
     server.sin_port = htons(PORT);
     server.sin_addr.s_addr = INADDR_ANY;
@@ -39,7 +41,7 @@ int main() {
     char* buffer = "message";
 
     sendto(sd, buffer, 7, 0, (struct sockaddr*)&server, sersize);
-    cout << "message sent";
+    cout << "message sent" << endl;
     int n = recvfrom(sd, buffer, 7, 0, (struct sockaddr*)&server, (socklen_t*)&sersize);
     string res(buffer);
     cout << res;

@@ -25,6 +25,8 @@ int main() {
 
     int sd = socket(AF_INET, SOCK_DGRAM, 0); //socket file descriptor
 
+    cout << sd << endl;
+
     server.sin_family = AF_INET; // IPv4
     server.sin_addr.s_addr = INADDR_ANY;
     server.sin_port = htons(PORT);
