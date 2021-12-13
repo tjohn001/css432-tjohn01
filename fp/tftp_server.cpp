@@ -11,11 +11,10 @@
 #include <strings.h>      // bzero 
 #include <netinet/tcp.h>  // SO_REUSEADDR 
 #include <pthread.h>
-#include <fstream>;
+#include <fstream>
 
 
 using namespace std;
-const int BUFSIZE = 1500; //size of buffer to recieve
 
 //thread to read data, takes a pointer to a 2 element int array
 //ptr[0] is the file descriptor of the socket to use
@@ -40,10 +39,10 @@ const int BUFSIZE = 1500; //size of buffer to recieve
 
 //main method, server should take 2 args - the port number and the number of iterations
 int main(int argc, char* argv[]) {
-    if (argc != 3) { //fail if given wrong number of args
+    /*if (argc != 3) { //fail if given wrong number of args
         cerr << "Wrong number of arguments entered" << endl;
         return 1;
-    }
+    }*/
 
     //setup server socket
     struct addrinfo hints;
