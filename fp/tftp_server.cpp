@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
             *((short*)buffer) = 3;
             *((short*)buffer + 2) = block;
             int toRead;
-            if (block * 512 >= size)
+            if (block * 512 > size)
                 toRead = size - ((block - 1)* 512);
             else
                 toRead = 512;
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
             if (bytesRead != 4) {
                 cout << "packet error";
             }
-            else if (*ack != 4) {
+            else if (*((short*)ack) != 4) {
                 cout << "wrong packet type";
             }
             else if (*((short*)ack + 2) != block) {
