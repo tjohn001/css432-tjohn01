@@ -84,16 +84,23 @@ int main(int argc, char* argv[]) {
     ptr += filename.length();
     string mode(ptr);
 
+    for (int i = 0; i < 25; i++) {
+        cout << buffer[i];
+    }
+    cout << endl;
+
     cout << "opcode: " << opcode << ", filename: " << filename << ", mode: " << mode;
 
     if (opcode == 1) {
         cout << "RRQ :" << filename << endl;
         ifstream file(filename, ifstream::binary);
+        cout << "file opened" << endl;
         int end = file.tellg();
         file.seekg(0, ios::beg);
         int size = end - file.tellg();
         //ptr = buffer;
         char ack[4];
+        cout << "start parsing file" << endl;
         for (int block = 1; file.tellg() < end; block++) {
             *((short*)buffer) = 3;
             *((short*)buffer + 2) = block;
