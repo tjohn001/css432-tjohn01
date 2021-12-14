@@ -59,7 +59,7 @@ int createConnection(const char* port, const char* address, const char* filename
         int data = 0;
         do {
             cout << "wait for packet" << endl;
-            int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+            int bytesRead = recvfrom(sockfd, buffer, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
             cout << "recieved packet" << endl;
             if (bytesRead < 2) {
                 cout << "read error";
@@ -68,6 +68,7 @@ int createConnection(const char* port, const char* address, const char* filename
             else if (buffer[1] == 5) {
                 cout << "error";
                 data = 0;
+                break;
             }
             else if (buffer[1] != 3) {
                 cout << "wrong packet type";

@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
 
     if (opcode == 1) {
         cout << "RRQ :" << filename << endl;
-        ifstream file(filename, ios::binary | ios::ate);
+        ifstream file(filename, ios::ate | ios::binary);
         cout << "file opened" << endl;
         int end = file.tellg();
         file.seekg(0, ios::beg);
@@ -112,7 +112,7 @@ int main(int argc, char* argv[]) {
             cout << "reading file" << endl;
             file.read(buffer + 4, toRead);
             cout << "sending block" << endl;
-            sendto(sockfd, buffer, 4 + toRead, MSG_CONFIRM, (const struct sockaddr*)&client, len);
+            cout << "bytes sent: " << sendto(sockfd, buffer, 4 + toRead, MSG_CONFIRM, (const struct sockaddr*)&client, len) << endl;
             cout << "block sent" << endl;
             bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
             cout << "ack recieved";
