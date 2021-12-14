@@ -123,7 +123,7 @@ int main(int argc, char* argv[]) {
             else if (*((short*)ack) != 4) {
                 cout << "wrong packet type";
             }
-            else if (*((short*)ack + 2) != block) {
+            else if (*((short*)(ack + 2)) != block) {
                 cout << "wrong ack #";
             }
 
@@ -135,15 +135,15 @@ int main(int argc, char* argv[]) {
                 if (bytesRead != 4) {
                     cout << "packet error";
                 }
-                else if (*ack != 4) {
+                else if (*((short*)ack) != 4) {
                     cout << "wrong packet type";
                 }
-                else if (*(ack + 2) != block) {
+                else if (*((short*)(ack + 2)) != block) {
                     cout << "wrong ack #";
                 }
-            }
-            file.close();
+            }  
         }
+        file.close();
     }
     else if (opcode == 2) {
         ofstream file(filename, ios::binary | ios::trunc);
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
         int data = 0;
         char ack[4];
         memset(&ack, 0, sizeof(ack));
-        *(ack + 1) = 4;
+        *((short*)ack) = 4;
         sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&client, len);
         do {
             int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
                 data = bytesRead - 4;
 
                 memset(&ack, 0, sizeof(ack));
-                *(ack + 1) = 4;
+                *((short*)ack) = 4;
                 bcopy(&block, ack + 2, 2);
                 sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&client, len);
                 /* resend ack on timeout*/

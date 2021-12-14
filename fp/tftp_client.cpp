@@ -60,22 +60,21 @@ int createConnection(const char* port, const char* address, const char* filename
         do {
             cout << "wait for packet" << endl;
             int bytesRead = recvfrom(sockfd, buffer, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
-            cout << "recieved packet" << endl;
+            cout << "recieved bytes: " << bytesRead << endl;
             if (bytesRead < 2) {
                 cout << "read error";
                 data = 0;
             }
-            else if (buffer[1] == 5) {
+            else if (*((short*)buffer) == 5) {
                 cout << "error";
                 data = 0;
                 break;
             }
-            else if (buffer[1] != 3) {
-                cout << "wrong packet type";
+            else if (*((short*)buffer) != 3) {
+                cout << "wrong packet type: " << *((short*)buffer);
                 data = 0;
             }
             else {
-                
                 char* readPtr = buffer + 2;
                 short int block = *readPtr;
                 readPtr += 2;
@@ -84,8 +83,8 @@ int createConnection(const char* port, const char* address, const char* filename
 
                 char ack[4];
                 char* tempPtr = ack;
-                *(ack) = 4;
-                *(ack + 2) = block;
+                *((short*)ack) = 4;
+                *((short*)(ack + 2)) = block;
                 cout << "send ack" << endl;
                 sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&server, len);
                 /* resend ack on timeout*/
@@ -100,11 +99,11 @@ int createConnection(const char* port, const char* address, const char* filename
         if (bytesRead != 4) {
             cout << "packet error";
         }
-        else if (*ack != 4) {
+        else if (*((short*)ack) != 4) {
             cout << "wrong packet type";
         }
-        else if (*(ack + 2) != 0) {
-            cout << "wrong starting ack";
+        else if (*((short*)(ack + 2)) != 0) {
+            cout << "wrong ack #";
         }
         else {
             ifstream file(filename, ifstream::binary);
@@ -130,7 +129,7 @@ int createConnection(const char* port, const char* address, const char* filename
                 else if (*ack != 4) {
                     cout << "wrong packet type";
                 }
-                else if (*((short*)ack + 2) != block) {
+                else if (*((short*)(ack + 2)) != block) {
                     cout << "wrong ack #";
                 }
                 
@@ -145,7 +144,7 @@ int createConnection(const char* port, const char* address, const char* filename
                     else if (*ack != 4) {
                         cout << "wrong packet type";
                     }
-                    else if (*(ack + 2) != block) {
+                    else if (*((short*)(ack + 2)) != block) {
                         cout << "wrong ack #";
                     }
                 }
