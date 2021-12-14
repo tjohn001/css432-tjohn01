@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
             *((short*)buffer + 2) = block;
             int toRead;
             if (block * 512 >= size)
-                toRead = size - block * 512;
+                toRead = block * 512 - size;
             else
                 toRead = 512;
             cout << "reading file" << endl;
