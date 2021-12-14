@@ -77,14 +77,14 @@ int main(int argc, char* argv[]) {
     
     int bytesRead = recvfrom(sockfd, (char*)buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
     //TODO: add check that ptr < bytes read
-    char* ptr = buffer + 1;
-    short opcode = *ptr;
+    char* ptr = buffer;
+    short opcode = *((short*)ptr);
     ptr += 2;
     string filename(ptr);
     ptr += filename.length();
     string mode(ptr);
 
-    cout << filename;
+    cout << "opcode: " << opcode << ", filename: " << filename << ", mode: " << mode;
 
     if (opcode == 1) {
         cout << "RRQ :" << filename << endl;
