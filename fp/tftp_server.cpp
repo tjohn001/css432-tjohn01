@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
                 cout << "packet error" << endl;
             }
             else if (*((short*)ack) != 4) {
-                cout << "wrong packet type" << endl;
+                cout << "wrong packet type" << *((short*)ack) << endl;
             }
             else if (*((short*)(ack + 2)) != block) {
                 cout << "wrong ack #: " << block << " vs " << *((short*)(ack + 2)) << endl;
