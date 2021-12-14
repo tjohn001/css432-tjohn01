@@ -129,7 +129,8 @@ int main(int argc, char* argv[]) {
 
             //if last block is exactly 512 bytes, send exta size 0 block
             if (block * 512 == size) {
-                *(buffer + 2) = block + 1;
+                block++;
+                *((short*)(buffer + 2)) = block;
                 sendto(sockfd, buffer, 4, MSG_CONFIRM, (const struct sockaddr*)&client, len);
                 bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
                 if (bytesRead != 4) {
