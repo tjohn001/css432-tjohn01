@@ -59,7 +59,7 @@ int createConnection(const char* port, const char* address, const char* filename
         int data = 512;
         do {
             cout << "wait for packet" << endl;
-            int bytesRead = recvfrom(sockfd, buffer, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+            int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
             cout << "recieved bytes: " << bytesRead << endl;
             if (bytesRead < 2) {
                 cout << "read error";
