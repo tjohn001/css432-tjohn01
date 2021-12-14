@@ -111,8 +111,8 @@ int main(int argc, char* argv[]) {
                 toRead = 512;
             cout << "reading file" << endl;
             file.read(buffer + 4, toRead);
-            cout << "sending block" << endl;
-            cout << "bytes sent: " << sendto(sockfd, buffer, 4 + toRead, MSG_CONFIRM, (const struct sockaddr*)&client, len) << endl;
+            cout << "sending bytes: " << toRead << endl;
+            cout << "bytes sent: " << (int) sendto(sockfd, (const char*) buffer, 4 + toRead, MSG_CONFIRM, (const struct sockaddr*)&client, len) << endl;
             cout << "block sent" << endl;
             bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
             cout << "ack recieved";
