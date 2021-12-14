@@ -144,6 +144,10 @@ int main(int argc, char* argv[]) {
     }
     else if (opcode == 2) {
         cout << "WRQ " << filename << endl;
+        char ack[4];
+        *((short*)ack) = 4;
+        *((short*)(ack + 2)) = 0;
+        sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&client, len);
         ofstream file(filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
         int data = 512;
@@ -168,12 +172,11 @@ int main(int argc, char* argv[]) {
                 file.write(readPtr, bytesRead - 4);
                 data = bytesRead - 4;
 
-                char ack[4];
                 char* tempPtr = ack;
                 *((short*)ack) = 4;
                 *((short*)(ack + 2)) = block;
                 cout << "read " << bytesRead << " send ack " << block << endl;
-                sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&server, len);
+                sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&client, len);
                 /* resend ack on timeout*/
             }
         } while (data == 512);
