@@ -116,15 +116,15 @@ int main(int argc, char* argv[]) {
             cout << "error: " << strerror(errno) << endl;
             cout << "block sent" << endl;
             bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
-            cout << "ack recieved";
+            cout << "ack recieved" << endl;
             if (bytesRead != 4) {
-                cout << "packet error";
+                cout << "packet error" << endl;
             }
             else if (*((short*)ack) != 4) {
-                cout << "wrong packet type";
+                cout << "wrong packet type" << endl;
             }
             else if (*((short*)(ack + 2)) != block) {
-                cout << "wrong ack #";
+                cout << "wrong ack #: " << block << " vs " << *((short*)(ack + 2)) << endl;
             }
 
             //if last block is exactly 512 bytes, send exta size 0 block
