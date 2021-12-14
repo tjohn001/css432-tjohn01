@@ -113,6 +113,7 @@ int main(int argc, char* argv[]) {
             file.read(buffer + 4, toRead);
             cout << "sending bytes: " << toRead << endl;
             cout << "bytes sent: " << (int) sendto(sockfd, (const char*) buffer, 4 + toRead, MSG_CONFIRM, (const struct sockaddr*)&client, len) << endl;
+            cout << "error: " << strerror(errno) << endl;
             cout << "block sent" << endl;
             bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
             cout << "ack recieved";
