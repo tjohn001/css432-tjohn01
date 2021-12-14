@@ -56,23 +56,20 @@ int createConnection(const char* port, const char* address, const char* filename
         cout << "RRQ " << filename << endl;
         ofstream file (filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
-        int data = 0;
+        int data = 512;
         do {
             cout << "wait for packet" << endl;
             int bytesRead = recvfrom(sockfd, buffer, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
             cout << "recieved bytes: " << bytesRead << endl;
             if (bytesRead < 2) {
                 cout << "read error";
-                data = 0;
             }
             else if (*((short*)buffer) == 5) {
                 cout << "error";
-                data = 0;
                 break;
             }
             else if (*((short*)buffer) != 3) {
                 cout << "wrong packet type: " << *((short*)buffer);
-                data = 0;
             }
             else {
                 char* readPtr = buffer + 2;
