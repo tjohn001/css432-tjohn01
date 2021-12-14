@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
 
     if (opcode == 1) {
         cout << "RRQ :" << filename << endl;
-        ifstream file(filename, ifstream::binary);
+        ifstream file(filename, ios::binary | ios::ate);
         cout << "file opened" << endl;
         int end = file.tellg();
         file.seekg(0, ios::beg);
@@ -145,7 +145,7 @@ int main(int argc, char* argv[]) {
         }
     }
     else if (opcode == 2) {
-        ofstream file(filename, ios::binary | std::ofstream::trunc);
+        ofstream file(filename, ios::binary | ios::trunc);
         file.seekp(0, ios::beg);
         int data = 0;
         char ack[4];
