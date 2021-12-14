@@ -22,7 +22,6 @@ int createConnection(const char* port, const char* address, const char* filename
 
     int sockfd;
     char buffer[MAXLINE];
-    char* hello = "Hello from client";
     struct sockaddr_in	 server;
 
     // Creating socket file descriptor
@@ -41,10 +40,8 @@ int createConnection(const char* port, const char* address, const char* filename
     int len = sizeof(server);
 
     char* ptr = buffer;
-    *ptr = 0;
-    ptr++;
-    *ptr = opcode;
-    ptr += sizeof(opcode);
+    *((short*)ptr) = opcode;
+    ptr += 2;
     strcpy(ptr, filename);
     ptr += sizeof(filename);
     *ptr = 0;
@@ -56,11 +53,14 @@ int createConnection(const char* port, const char* address, const char* filename
     sendto(sockfd, buffer, ptr - buffer, MSG_CONFIRM, (const struct sockaddr*)&server, len);
 
     if (opcode == 1) {
+        cout << "RRQ " << filename << endl;
         ofstream file (filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
         int data = 0;
         do {
+            cout << "wait for packet" << endl;
             int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+            cout << "recieved packet" << endl;
             if (bytesRead < 2) {
                 cout << "read error";
                 data = 0;
@@ -74,6 +74,7 @@ int createConnection(const char* port, const char* address, const char* filename
                 data = 0;
             }
             else {
+                
                 char* readPtr = buffer + 2;
                 short int block = *readPtr;
                 readPtr += 2;
@@ -84,10 +85,12 @@ int createConnection(const char* port, const char* address, const char* filename
                 char* tempPtr = ack;
                 *(ack) = 4;
                 *(ack + 2) = block;
+                cout << "send ack" << endl;
                 sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&server, len);
                 /* resend ack on timeout*/
             }
         } while (data == 512);
+        cout << "done" << endl;
         file.close();
     }
     else if (opcode == 2) {

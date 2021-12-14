@@ -48,7 +48,6 @@ int main(int argc, char* argv[]) {
     //setup server socket
     int sockfd;
     char buffer[MAXLINE];
-    char* hello = "Hello from server";
     struct sockaddr_in server, client;
     // Creating socket file descriptor
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -88,6 +87,7 @@ int main(int argc, char* argv[]) {
     cout << filename;
 
     if (opcode == 1) {
+        cout << "RRQ :" << filename << endl;
         ifstream file(filename, ifstream::binary);
         int end = file.tellg();
         file.seekg(0, ios::beg);
@@ -95,17 +95,19 @@ int main(int argc, char* argv[]) {
         //ptr = buffer;
         char ack[4];
         for (int block = 1; file.tellg() < end; block++) {
-            *(buffer) = 3;
-            *(buffer + 2) = block;
+            *((short*)buffer) = 3;
+            *((short*)buffer + 2) = block;
             int toRead;
             if (block * 512 >= size)
                 toRead = size - block * 512;
             else
                 toRead = 512;
             file.read(buffer + 4, toRead);
+            cout << "sending block" << endl;
             sendto(sockfd, buffer, 4 + toRead, MSG_CONFIRM, (const struct sockaddr*)&client, len);
-
+            cout << "block sent" << endl;
             bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
+            cout << "ack recieved";
             if (bytesRead != 4) {
                 cout << "packet error";
             }
