@@ -40,8 +40,6 @@ int createConnection(const char* port, const char* address, const char* filename
 
     int len = sizeof(server);
 
-    char buffer[MAXLINE];
-
     char* ptr = buffer;
     *ptr = 0;
     ptr++;
