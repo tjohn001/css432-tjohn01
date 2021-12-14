@@ -18,7 +18,7 @@ using namespace std;
 
 //method for handling creating connection to server
 //takes in port #, server address, number of iterations to run, number of buffers, size of buffers, and the type of sending method to use
-int createConnection(const char* port, const char* address, const char* filename, const short opcode) {
+int createConnection(const char* port, const char* filename, const short opcode) {
 
     int sockfd;
     char buffer[MAXLINE];
@@ -73,7 +73,7 @@ int createConnection(const char* port, const char* address, const char* filename
             }
             else {
                 char* readPtr = buffer + 2;
-                short int block = *readPtr;
+                short block = *((short*)readPtr);
                 readPtr += 2;
                 file.write(readPtr, bytesRead - 4);
                 data = bytesRead - 4;
@@ -82,7 +82,6 @@ int createConnection(const char* port, const char* address, const char* filename
                 char* tempPtr = ack;
                 *((short*)ack) = 4;
                 *((short*)(ack + 2)) = block;
-                cout << "block: " << ack[2] << " " << ack[3] << endl;
                 cout << "read " << bytesRead << " send ack " << block << endl;
                 sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&server, len);
                 /* resend ack on timeout*/
@@ -92,65 +91,70 @@ int createConnection(const char* port, const char* address, const char* filename
         file.close();
     }
     else if (opcode == 2) {
+        cout << "WRQ :" << filename << endl;
         char ack[4];
-        int bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+        int bytesRead =  recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+        cout << "ack recieved" << endl;
         if (bytesRead != 4) {
-            cout << "packet error";
+            cout << "packet error" << endl;
         }
         else if (*((short*)ack) != 4) {
-            cout << "wrong packet type";
+            cout << "wrong packet type" << *((short*)ack) << endl;
         }
         else if (*((short*)(ack + 2)) != 0) {
-            cout << "wrong ack #";
+            cout << "ack not 0: " << *((short*)(ack + 2)) << endl;
         }
-        else {
-            ifstream file(filename, ifstream::binary);
-            int end = file.tellg();
-            file.seekg(0, ios::beg);
-            int size = end - file.tellg();
-            //ptr = buffer;
-            for (int block = 1; file.tellg() < end; block++) {
-                *(buffer) = 3;
-                *((short*)(buffer + 2)) = block;
-                int toRead;
-                if (block * 512 >= size) 
-                    toRead = size - block * 512;
-                else 
-                    toRead = 512;
-                file.read(buffer + 4, toRead);
-                sendto(sockfd, buffer, 4 + toRead, MSG_CONFIRM, (const struct sockaddr*)&server, len);
+        ifstream file(filename, ios::ate | ios::binary);
+        cout << "file opened" << endl;
+        int end = file.tellg();
+        file.seekg(0, ios::beg);
+        int size = end - file.tellg();
+        //ptr = buffer;
+        
+        cout << "start: " << file.tellg() << " end: " << end << " size: " << size;
+        for (int block = 1; file.tellg() < end; block++) {
+            *((short*)buffer) = 3;
+            *((short*)(buffer + 2)) = block;
+            int toRead;
+            if (block * 512 > size)
+                toRead = size - ((block - 1) * 512);
+            else
+                toRead = 512;
+            cout << "reading file" << endl;
+            file.read(buffer + 4, toRead);
+            cout << "sending bytes: " << toRead << endl;
+            cout << "bytes sent: " << (int)sendto(sockfd, (const char*)buffer, 4 + toRead, MSG_CONFIRM, (const struct sockaddr*)&server, len) << endl;
+            cout << "block sent: " << *((short*)(buffer + 2)) << endl;
+            int bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+            cout << "ack recieved" << endl;
+            if (bytesRead != 4) {
+                cout << "packet error" << endl;
+            }
+            else if (*((short*)ack) != 4) {
+                cout << "wrong packet type" << *((short*)ack) << endl;
+            }
+            else if (*((short*)(ack + 2)) != block) {
+                cout << "wrong ack #: " << block << " vs " << *((short*)(ack + 2)) << endl;
+            }
 
+            //if last block is exactly 512 bytes, send exta size 0 block
+            if (block * 512 == size) {
+                block++;
+                *((short*)(buffer + 2)) = block;
+                sendto(sockfd, buffer, 4, MSG_CONFIRM, (const struct sockaddr*)&server, len);
                 bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
                 if (bytesRead != 4) {
                     cout << "packet error";
                 }
-                else if (*ack != 4) {
+                else if (*((short*)ack) != 4) {
                     cout << "wrong packet type";
                 }
                 else if (*((short*)(ack + 2)) != block) {
                     cout << "wrong ack #";
                 }
-                
-                //if last block is exactly 512 bytes, send exta size 0 block
-                if (block * 512 == size) {
-                    block++;
-                    *((short*)(buffer + 2)) = block;
-                    sendto(sockfd, buffer, 4, MSG_CONFIRM, (const struct sockaddr*)&server, len);
-                    bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
-                    if (bytesRead != 4) {
-                        cout << "packet error";
-                    }
-                    else if (*ack != 4) {
-                        cout << "wrong packet type";
-                    }
-                    else if (*((short*)(ack + 2)) != block) {
-                        cout << "wrong ack #";
-                    }
-                }
-
             }
-            file.close();
         }
+        file.close();
     }
     close(sockfd);
     return 0;
@@ -168,7 +172,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }*/
 
-    return createConnection("54948", "csslab9.uwb.edu", "test.txt", 1);
+    return createConnection("54948", "test.txt", 2);
 
     //return createConnection(argv[1], argv[2], stoi(argv[3]), stoi(argv[4]), stoi(argv[5]), stoi(argv[6]));
 }

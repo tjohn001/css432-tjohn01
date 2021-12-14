@@ -81,15 +81,12 @@ int main(int argc, char* argv[]) {
     short opcode = *((short*)ptr);
     ptr += 2;
     string filename(ptr);
-    ptr += filename.length();
+    ptr += filename.length() + 1;
     string mode(ptr);
 
-    for (int i = 0; i < 25; i++) {
-        cout << buffer[i];
-    }
     cout << endl;
 
-    cout << "opcode: " << opcode << ", filename: " << filename << ", mode: " << mode;
+    cout << "opcode: " << opcode << ", filename: " << filename << ", mode: " << mode << endl;
 
     if (opcode == 1) {
         cout << "RRQ :" << filename << endl;
@@ -146,42 +143,42 @@ int main(int argc, char* argv[]) {
         file.close();
     }
     else if (opcode == 2) {
-        ofstream file(filename, ios::binary | ios::trunc);
+        cout << "WRQ " << filename << endl;
+        ofstream file(filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
-        int data = 0;
-        char ack[4];
-        memset(&ack, 0, sizeof(ack));
-        *((short*)ack) = 4;
-        sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&client, len);
+        int data = 512;
         do {
+            cout << "wait for packet" << endl;
             int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
+            cout << "recieved bytes: " << bytesRead << endl;
             if (bytesRead < 2) {
                 cout << "read error";
-                data = 0;
             }
-            else if (buffer[1] == 5) {
+            else if (*((short*)buffer) == 5) {
                 cout << "error";
-                data = 0;
+                break;
             }
-            else if (buffer[1] != 3) {
-                cout << "wrong packet type";
-                data = 0;
+            else if (*((short*)buffer) != 3) {
+                cout << "wrong packet type: " << *((short*)buffer);
             }
             else {
                 char* readPtr = buffer + 2;
-                short int block = *readPtr;
+                short block = *((short*)readPtr);
                 readPtr += 2;
                 file.write(readPtr, bytesRead - 4);
                 data = bytesRead - 4;
 
-                memset(&ack, 0, sizeof(ack));
+                char ack[4];
+                char* tempPtr = ack;
                 *((short*)ack) = 4;
-                bcopy(&block, ack + 2, 2);
-                sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&client, len);
+                *((short*)(ack + 2)) = block;
+                cout << "read " << bytesRead << " send ack " << block << endl;
+                sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&server, len);
                 /* resend ack on timeout*/
             }
         } while (data == 512);
-        file.close();   
+        cout << "done" << endl;
+        file.close();
     }
 
 
