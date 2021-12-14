@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
         int size = end - file.tellg();
         //ptr = buffer;
         char ack[4];
-        cout << "start parsing file" << endl;
+        cout << "start: " << file.tellg() << " end: " << end << " size: " << size;
         for (int block = 1; file.tellg() < end; block++) {
             *((short*)buffer) = 3;
             *((short*)buffer + 2) = block;
@@ -109,6 +109,7 @@ int main(int argc, char* argv[]) {
                 toRead = size - block * 512;
             else
                 toRead = 512;
+            cout << "reading file" << endl;
             file.read(buffer + 4, toRead);
             cout << "sending block" << endl;
             sendto(sockfd, buffer, 4 + toRead, MSG_CONFIRM, (const struct sockaddr*)&client, len);
