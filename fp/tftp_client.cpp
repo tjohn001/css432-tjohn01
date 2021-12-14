@@ -82,6 +82,7 @@ int createConnection(const char* port, const char* address, const char* filename
                 char* tempPtr = ack;
                 *((short*)ack) = 4;
                 *((short*)(ack + 2)) = block;
+                cout << "block: " << ack[2] << " " << ack[3] << endl;
                 cout << "read " << bytesRead << " send ack " << block << endl;
                 sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&server, len);
                 /* resend ack on timeout*/

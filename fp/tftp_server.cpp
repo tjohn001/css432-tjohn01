@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
         cout << "start: " << file.tellg() << " end: " << end << " size: " << size;
         for (int block = 1; file.tellg() < end; block++) {
             *((short*)buffer) = 3;
-            *((short*)buffer + 2) = block;
+            *((short*)(buffer + 2)) = block;
             int toRead;
             if (block * 512 > size)
                 toRead = size - ((block - 1)* 512);
@@ -113,8 +113,7 @@ int main(int argc, char* argv[]) {
             file.read(buffer + 4, toRead);
             cout << "sending bytes: " << toRead << endl;
             cout << "bytes sent: " << (int) sendto(sockfd, (const char*) buffer, 4 + toRead, MSG_CONFIRM, (const struct sockaddr*)&client, len) << endl;
-            cout << "error: " << strerror(errno) << endl;
-            cout << "block sent" << endl;
+            cout << "block sent: " << *((short*)(buffer + 2)) << endl;
             bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
             cout << "ack recieved" << endl;
             if (bytesRead != 4) {
