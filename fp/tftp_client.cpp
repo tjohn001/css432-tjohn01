@@ -12,32 +12,35 @@
 #include <unistd.h>
 #include <fstream>
 
+int MAXLINE = 516, PORT = 51949;
+
 using namespace std;
 
 //method for handling creating connection to server
 //takes in port #, server address, number of iterations to run, number of buffers, size of buffers, and the type of sending method to use
 int createConnection(const char* port, const char* address, const char* filename, const short opcode) {
 
-    //setup server socket
-    struct addrinfo hints;
-    struct addrinfo* server;
-    int status, serverSize;
+    int sockfd;
+    char buffer[MAXLINE];
+    char* hello = "Hello from client";
+    struct sockaddr_in	 server;
 
-    memset(&hints, 0, sizeof hints); // make sure the struct is empty
-    hints.ai_family = AF_UNSPEC;     // don't care IPv4 or IPv6
-    hints.ai_socktype = SOCK_DGRAM; // TCP stream sockets
-
-    //add server address info to server
-    if ((status = getaddrinfo(address, port, &hints, &server)) != 0) {
-        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
-        return 1;
+    // Creating socket file descriptor
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        perror("socket creation failed");
+        exit(EXIT_FAILURE);
     }
 
-    int sd = socket(server->ai_family, server->ai_socktype, server->ai_protocol); //socket file descriptor
+    memset(&server, 0, sizeof(server));
 
-    serverSize = sizeof(server);
+    // Filling server information
+    server.sin_family = AF_INET;
+    server.sin_port = htons(PORT);
+    server.sin_addr.s_addr = INADDR_ANY;
 
-    char buffer[516];
+    int len = sizeof(server);
+
+    char buffer[MAXLINE];
 
     char* ptr = buffer;
     *ptr = 0;
@@ -52,14 +55,14 @@ int createConnection(const char* port, const char* address, const char* filename
     ptr += sizeof("octet");
     *ptr = 0;
     
-    sendto(sd, buffer, ptr - buffer, 0, (sockaddr*)server, serverSize);
+    sendto(sockfd, buffer, ptr - buffer, MSG_CONFIRM, (const struct sockaddr*)&server, len);
 
     if (opcode == 1) {
         ofstream file (filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
         int data = 0;
         do {
-            int bytesRead = recvfrom(sd, buffer, 516, 0, (sockaddr*)server, (socklen_t*)&serverSize);
+            int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
             if (bytesRead < 2) {
                 cout << "read error";
                 data = 0;
@@ -83,7 +86,7 @@ int createConnection(const char* port, const char* address, const char* filename
                 char* tempPtr = ack;
                 *(ack) = 4;
                 *(ack + 2) = block;
-                sendto(sd, ack, 4, 0, (sockaddr*)server, serverSize);
+                sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&server, len);
                 /* resend ack on timeout*/
             }
         } while (data == 512);
@@ -91,7 +94,7 @@ int createConnection(const char* port, const char* address, const char* filename
     }
     else if (opcode == 2) {
         char ack[4];
-        int bytesRead = recvfrom(sd, ack, 4, 0, (sockaddr*)server, (socklen_t*)&serverSize);
+        int bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
         if (bytesRead != 4) {
             cout << "packet error";
         }
@@ -116,9 +119,9 @@ int createConnection(const char* port, const char* address, const char* filename
                 else 
                     toRead = 512;
                 file.read(buffer + 4, toRead);
-                sendto(sd, buffer, 4 + toRead, 0, (sockaddr*)server, serverSize);
+                sendto(sockfd, buffer, 4 + toRead, MSG_CONFIRM, (const struct sockaddr*)&server, len);
 
-                bytesRead = recvfrom(sd, ack, 4, 0, (sockaddr*)server, (socklen_t*)&serverSize);
+                bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
                 if (bytesRead != 4) {
                     cout << "packet error";
                 }
@@ -132,8 +135,8 @@ int createConnection(const char* port, const char* address, const char* filename
                 //if last block is exactly 512 bytes, send exta size 0 block
                 if (block * 512 == size) {
                     *(buffer + 2) = block + 1;
-                    sendto(sd, buffer, 4, 0, (sockaddr*)server, (serverSize));
-                    bytesRead = recvfrom(sd, ack, 4, 0, (sockaddr*)server, (socklen_t*)&serverSize);
+                    sendto(sockfd, buffer, 4, MSG_CONFIRM, (const struct sockaddr*)&server, len);
+                    bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
                     if (bytesRead != 4) {
                         cout << "packet error";
                     }
@@ -149,7 +152,7 @@ int createConnection(const char* port, const char* address, const char* filename
             file.close();
         }
     }
-    close(sd);
+    close(sockfd);
     return 0;
 }
 

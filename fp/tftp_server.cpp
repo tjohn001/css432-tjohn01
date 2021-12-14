@@ -13,6 +13,7 @@
 #include <pthread.h>
 #include <fstream>
 
+int MAXLINE = 516, PORT = 51949;
 
 using namespace std;
 
@@ -30,9 +31,9 @@ using namespace std;
     write(args[0], &count, sizeof(int)); //send number of writes made
     close(args[0]); //close socket fd
 
-    int sd = *(int*)ptr;
+    int sockfd = *(int*)ptr;
     struct addrinfo* client = (addrinfo*)(ptr + sizeof(int));
-    char buffer[516];
+    char buffer[MAXLINE];
     recvfrom()
 
 }*/
@@ -45,35 +46,37 @@ int main(int argc, char* argv[]) {
     }*/
 
     //setup server socket
-    struct addrinfo hints;
-    struct addrinfo* client;//*server, *client;
-    int clientSize;
-    int status;
-
-    memset(&hints, 0, sizeof hints); // make sure the struct is empty
-    hints.ai_family = AF_UNSPEC;     // don't care IPv4 or IPv6
-    hints.ai_socktype = SOCK_DGRAM; // TCP stream sockets
-    hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
-
-    //add server address info to server
-    if ((status = getaddrinfo(NULL, "54949", &hints, &client)) != 0) {
-        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
-        return 1;
+    int sockfd;
+    char buffer[MAXLINE];
+    char* hello = "Hello from server";
+    struct sockaddr_in server, client;
+    // Creating socket file descriptor
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        perror("socket creation failed");
+        exit(EXIT_FAILURE);
     }
 
+    memset(&server, 0, sizeof(server));
+    memset(&client, 0, sizeof(client));
 
-    int sd = socket(client->ai_family, client->ai_socktype, client->ai_protocol); //socket file descriptor
+    // Filling server information
+    server.sin_family = AF_INET; // IPv4
+    server.sin_addr.s_addr = INADDR_ANY;
+    server.sin_port = htons(PORT);
 
-    const int yes = 0;
-    setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(yes)); //setup socket
+    // Bind the socket with the server address
+    if (bind(sockfd, (const struct sockaddr*)&server,
+        sizeof(server)) < 0)
+    {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
 
-    bind(sd, client->ai_addr, client->ai_addrlen); //bind socket
+    int len;
+
+    len = sizeof(client); //len is value/resuslt
     
-    clientSize = sizeof(client);
-
-    char buffer[516];
-    
-    int bytesRead = recvfrom(sd, buffer, 516, 0, (sockaddr *) client, (socklen_t*) sizeof(client));
+    int bytesRead = recvfrom(sockfd, (char*)buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
     //TODO: add check that ptr < bytes read
     char* ptr = buffer + 1;
     short opcode = *ptr;
@@ -100,9 +103,9 @@ int main(int argc, char* argv[]) {
             else
                 toRead = 512;
             file.read(buffer + 4, toRead);
-            sendto(sd, buffer, 4 + toRead, 0, (sockaddr*)client, clientSize);
+            sendto(sockfd, buffer, 4 + toRead, MSG_CONFIRM, (const struct sockaddr*)&client, len);
 
-            bytesRead = recvfrom(sd, ack, 4, 0, (sockaddr*)client, (socklen_t*) &clientSize);
+            bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
             if (bytesRead != 4) {
                 cout << "packet error";
             }
@@ -116,8 +119,8 @@ int main(int argc, char* argv[]) {
             //if last block is exactly 512 bytes, send exta size 0 block
             if (block * 512 == size) {
                 *(buffer + 2) = block + 1;
-                sendto(sd, buffer, 4, 0, (sockaddr*)client, clientSize);
-                bytesRead = recvfrom(sd, ack, 4, 0, (sockaddr*)client, (socklen_t*)&clientSize);
+                sendto(sockfd, buffer, 4, MSG_CONFIRM, (const struct sockaddr*)&client, len);
+                bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
                 if (bytesRead != 4) {
                     cout << "packet error";
                 }
@@ -138,9 +141,9 @@ int main(int argc, char* argv[]) {
         char ack[4];
         memset(&ack, 0, sizeof(ack));
         *(ack + 1) = 4;
-        sendto(sd, ack, 4, 0, (sockaddr*)client, clientSize);
+        sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&client, len);
         do {
-            int bytesRead = recvfrom(sd, buffer, 516, 0, (sockaddr*)client, (socklen_t*)&clientSize);
+            int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
             if (bytesRead < 2) {
                 cout << "read error";
                 data = 0;
@@ -163,7 +166,7 @@ int main(int argc, char* argv[]) {
                 memset(&ack, 0, sizeof(ack));
                 *(ack + 1) = 4;
                 bcopy(&block, ack + 2, 2);
-                sendto(sd, ack, 4, 0, (sockaddr*)client, clientSize);
+                sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&client, len);
                 /* resend ack on timeout*/
             }
         } while (data == 512);
@@ -177,12 +180,12 @@ int main(int argc, char* argv[]) {
     /*while (true) {
         struct sockaddr_storage newSockAddr;
         socklen_t newSockAddrSize = sizeof(newSockAddr);
-        int newSd = accept(sd, (struct sockaddr*)&newSockAddr, &newSockAddrSize); //fd of new socket
+        int newSd = accept(sockfd, (struct sockaddr*)&newSockAddr, &newSockAddrSize); //fd of new socket
         int args[] = { newSd, stoi(argv[2]) };
         pthread_t thread;
         int iret = pthread_create(&thread, NULL, &recieve_data, (void*)args); //create new recieve_data thread
         //pthread_join(thread, NULL);
     }*/
-    close(sd); //close socket fd
+    close(sockfd); //close socket fd
     return 0;
 }
