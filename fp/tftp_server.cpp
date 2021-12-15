@@ -36,11 +36,11 @@ public:
 //int read(Transfer* transfer) {
 int sendFile(string filename, sockaddr_in recvaddr, int sockfd) {
     int tid = ntohs(recvaddr.sin_port);
-    ifstream file(filename);
+    ifstream file(filename, ios::ate | ios::binary);
     int end = file.tellg();
     file.seekg(0, ios::beg);
     int size = end - file.tellg();
-    cout << "start: " << file.tellg() << " end: " << end << " size: " << size;
+    cout << "start: " << file.tellg() << " end: " << end << " size: " << size << endl;
     struct sockaddr_in data;
     memset(&data, 0, sizeof(data));
     int len = sizeof(recvaddr);
