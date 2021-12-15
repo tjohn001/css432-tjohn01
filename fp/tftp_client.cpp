@@ -23,13 +23,13 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
     // Filling server information
     server.sin_family = AF_INET;
     server.sin_port = htons(PORT);
-    server.sin_addr.s_addr = INADDR_ANY;
+    server.sin_addr.s_addr = inet_addr(HOST_ADDRESS);
 
-    timeval tv;
-    tv.tv_sec = TIMEOUT; /* seconds */
-    tv.tv_usec = 0;
+    timeval timeSent;
+    timeSent.tv_sec = TIMEOUT; /* seconds */
+    timeSent.tv_usec = 0;
 
-    if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv) < 0))
+    if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeSent, sizeof(timeSent) < 0))
         cout << "Cannot Set SO_SNDTIMEO for socket" << endl;
 
     int len = sizeof(server);
@@ -52,7 +52,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         ofstream file (filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
         int data = 512;
-        short block;
+        short curblock;
         do {
             cout << "wait for packet" << endl;
             int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
@@ -62,14 +62,14 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
             }
             else if (*((short*)buffer) == 5) {
                 cout << "error";
-                return;
+                return -1;
             }
             else if (*((short*)buffer) != 3) {
                 cout << "wrong packet type: " << *((short*)buffer);
             }
             else {
                 char* readPtr = buffer + 2;
-                short block = *((short*)readPtr);
+                short curblock = *((short*)readPtr);
                 readPtr += 2;
                 file.write(readPtr, bytesRead - 4);
                 data = bytesRead - 4;
@@ -77,9 +77,9 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                 char ack[4];
                 char* tempPtr = ack;
                 *((short*)ack) = 4;
-                *((short*)(ack + 2)) = block;
-                cout << "read " << bytesRead << " send ack " << block << endl;
-                sendto(sockfd, ack, 4, MSG_CONFIRM, (const struct sockaddr*)&server, len);
+                *((short*)(ack + 2)) = curblock;
+                cout << "read " << bytesRead << " send ack " << curblock << endl;
+                sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&server, len);
                 /* resend ack on timeout*/
             }
         } while (data == 512);
@@ -88,69 +88,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
     }
     else if (opcode == 2) {
         cout << "WRQ :" << filename << endl;
-        char ack[4];
-        int bytesRead =  recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
-        cout << "ack recieved" << endl;
-        if (bytesRead != 4) {
-            cout << "packet error" << endl;
-        }
-        else if (*((short*)ack) != 4) {
-            cout << "wrong packet type" << *((short*)ack) << endl;
-        }
-        else if (*((short*)(ack + 2)) != 0) {
-            cout << "ack not 0: " << *((short*)(ack + 2)) << endl;
-        }
-        ifstream file(filename, ios::ate | ios::binary);
-        cout << "file opened" << endl;
-        int end = file.tellg();
-        file.seekg(0, ios::beg);
-        int size = end - file.tellg();
-        //ptr = buffer;
-        
-        cout << "start: " << file.tellg() << " end: " << end << " size: " << size;
-        for (int block = 1; file.tellg() < end; block++) {
-            *((short*)buffer) = 3;
-            *((short*)(buffer + 2)) = block;
-            int toRead;
-            if (block * 512 > size)
-                toRead = size - ((block - 1) * 512);
-            else
-                toRead = 512;
-            cout << "reading file" << endl;
-            file.read(buffer + 4, toRead);
-            cout << "sending bytes: " << toRead << endl;
-            cout << "bytes sent: " << (int)sendto(sockfd, (const char*)buffer, 4 + toRead, MSG_CONFIRM, (const struct sockaddr*)&server, len) << endl;
-            cout << "block sent: " << *((short*)(buffer + 2)) << endl;
-            int bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
-            cout << "ack recieved" << endl;
-            if (bytesRead != 4) {
-                cout << "packet error" << endl;
-            }
-            else if (*((short*)ack) != 4) {
-                cout << "wrong packet type" << *((short*)ack) << endl;
-            }
-            else if (*((short*)(ack + 2)) != block) {
-                cout << "wrong ack #: " << block << " vs " << *((short*)(ack + 2)) << endl;
-            }
-
-            //if last block is exactly 512 bytes, send exta size 0 block
-            if (block * 512 == size) {
-                block++;
-                *((short*)(buffer + 2)) = block;
-                sendto(sockfd, buffer, 4, MSG_CONFIRM, (const struct sockaddr*)&server, len);
-                bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
-                if (bytesRead != 4) {
-                    cout << "packet error";
-                }
-                else if (*((short*)ack) != 4) {
-                    cout << "wrong packet type";
-                }
-                else if (*((short*)(ack + 2)) != block) {
-                    cout << "wrong ack #";
-                }
-            }
-        }
-        file.close();
+        sendFile(filename, server, sockfd);
     }
     close(sockfd);
     return 0;
