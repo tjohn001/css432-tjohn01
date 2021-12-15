@@ -36,10 +36,10 @@ int sendFile(string filename, sockaddr_in recvaddr, int sockfd) {
             gettimeofday(&start_time, NULL); //start timer
             gettimeofday(&cur_time, NULL);
             while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
-                cout << "waiting for packet" << endl;
                 int bytesRead = recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&data, (socklen_t*)&dataLen);
                 if (bytesRead >= 4) {
                     if (tid == ntohs(data.sin_port)) {
+                        cout << "packet recieved";
                         if (*((short*)dataBuf) == 5) {
                             string error(dataBuf + 4);
                             cout << "Error " << *((short*)(dataBuf + 2)) << ": " << error << endl;
