@@ -108,6 +108,7 @@ void processPacket(char* buffer, struct sockaddr_in client, int len, int sockfd)
             else if (opcode == 2) {
                 writeFile(filename, client, sockfd);
             }
+            exit(0);
         }
         if (pid < 0) {
             cout << "fork error" << endl;
@@ -124,6 +125,7 @@ int main(int argc, char* argv[]) {
     int sockfd;
     char buffer[MAXLINE];
     struct sockaddr_in server, client;
+    int len = sizeof(client); //len is value/resuslt
     // Creating socket file descriptor
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
@@ -148,9 +150,7 @@ int main(int argc, char* argv[]) {
     tv.tv_usec = 0;
     //if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv) < 0))
         //cout << "Cannot Set SO_SNDTIMEO for socket" << endl;
-    struct sockaddr_in client;
-    memset(&client, 0, sizeof(client));
-    int len = sizeof(client); //len is value/resuslt
+    
     while (true) {
         processPacket(buffer, client, len, sockfd);
     }
