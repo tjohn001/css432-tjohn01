@@ -14,7 +14,6 @@
 #include <netinet/tcp.h>  // SO_REUSEADDR 
 #include <pthread.h>
 #include <fstream>
-#include <list>
 #include "tftp.h"
 
 using namespace std;
@@ -40,14 +39,14 @@ using namespace std;
 
 }*/
 
-class Transfer {
+/*class Transfer {
 public:
     int tid, filePosition = 0, sockfd, size, opmode, clientlen;
     fstream file;
     short block = 0;
     sockaddr_in client;
     list<Transfer> *list;
-};
+};*/
 
 //int read(Transfer* transfer) {
 int sendFile(string filename, sockaddr_in recvaddr, int sockfd) {
@@ -88,8 +87,9 @@ int sendFile(string filename, sockaddr_in recvaddr, int sockfd) {
                     if (tid == ntohs(data.sin_port)) {
                         if (*((short*)dataBuf) == 5) {
                             string error(dataBuf + 4);
-                            cout << "Error " << *((short*)(dataBuf + 2)) << error << endl;
-                            return;
+                            cout << "Error " << *((short*)(dataBuf + 2)) << ": " << error << endl;
+                            file.close();
+                            return -1;
                         }
                         else if (*((short*)dataBuf) == 4) {
                             if (*((short*)(dataBuf + 2)) == block) {

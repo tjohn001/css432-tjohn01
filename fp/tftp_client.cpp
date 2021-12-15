@@ -10,8 +10,6 @@
 #include <fstream>
 #include "tftp.h"
 
-int MAXLINE = 516, PORT = 51949;
-
 using namespace std;
 
 //method for handling creating connection to server
