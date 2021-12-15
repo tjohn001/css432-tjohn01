@@ -40,6 +40,7 @@ int sendFile(string filename, sockaddr_in recvaddr, int sockfd) {
     int end = file.tellg();
     file.seekg(0, ios::beg);
     int size = end - file.tellg();
+    cout << "start: " << file.tellg() << " end: " << end << " size: " << size;
     struct sockaddr_in data;
     memset(&data, 0, sizeof(data));
     int len = sizeof(recvaddr);
@@ -139,7 +140,7 @@ int main(int argc, char* argv[]) {
     tv.tv_sec = TIMEOUT; /* seconds */
     tv.tv_usec = 0;
     //if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv) < 0))
-        cout << "Cannot Set SO_SNDTIMEO for socket" << endl;
+        //cout << "Cannot Set SO_SNDTIMEO for socket" << endl;
     int len;
 
     len = sizeof(client); //len is value/resuslt
@@ -151,7 +152,7 @@ int main(int argc, char* argv[]) {
     if (opcode < 1 || opcode > 7) {
         *((short*)buffer) = 5;
         *((short*)(buffer + 2)) = 4;
-        char* error = "Uknown operation\0";
+        const char* error = "Uknown operation\0";
         cout << error << endl;
         strcpy(buffer + 4, error);
         sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
@@ -168,7 +169,7 @@ int main(int argc, char* argv[]) {
     if (filename.find('/') != -1 || filename.find('\\') != -1) {
         *((short*)buffer) = 5;
         *((short*)(buffer + 2)) = 2;
-        char* error = "Attempted to access file path\0";
+        const char* error = "Attempted to access file path\0";
         strcpy(buffer + 4, error);
         sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
     }
