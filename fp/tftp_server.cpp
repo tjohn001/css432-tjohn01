@@ -145,11 +145,6 @@ int main(int argc, char* argv[]) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
-    timeval tv;
-    tv.tv_sec = TIMEOUT; /* seconds */
-    tv.tv_usec = 0;
-    //if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv) < 0))
-        //cout << "Cannot Set SO_SNDTIMEO for socket" << endl;
     
     while (true) {
         processPacket(buffer, client, len, sockfd);

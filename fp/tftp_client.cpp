@@ -6,7 +6,7 @@ using namespace std;
 
 //method for handling creating connection to server
 //takes in port #, server address, number of iterations to run, number of buffers, size of buffers, and the type of sending method to use
-int createConnection(const char* port, const char* filename, const short opcode) {
+int startTransfer(const char* port, const char* filename, const short opcode) {
 
     int sockfd;
     char buffer[MAXLINE];
@@ -24,6 +24,13 @@ int createConnection(const char* port, const char* filename, const short opcode)
     server.sin_family = AF_INET;
     server.sin_port = htons(PORT);
     server.sin_addr.s_addr = INADDR_ANY;
+
+    timeval tv;
+    tv.tv_sec = TIMEOUT; /* seconds */
+    tv.tv_usec = 0;
+
+    if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv) < 0))
+        cout << "Cannot Set SO_SNDTIMEO for socket" << endl;
 
     int len = sizeof(server);
 
@@ -45,6 +52,7 @@ int createConnection(const char* port, const char* filename, const short opcode)
         ofstream file (filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
         int data = 512;
+        short block;
         do {
             cout << "wait for packet" << endl;
             int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
@@ -54,7 +62,7 @@ int createConnection(const char* port, const char* filename, const short opcode)
             }
             else if (*((short*)buffer) == 5) {
                 cout << "error";
-                break;
+                return;
             }
             else if (*((short*)buffer) != 3) {
                 cout << "wrong packet type: " << *((short*)buffer);
@@ -160,9 +168,9 @@ int main(int argc, char* argv[]) {
         exit(1);
     }*/
 
-    return createConnection("54948", "test.txt", 1);
+    return startTransfer("54948", "test.txt", 1);
 
-    //return createConnection(argv[1], argv[2], stoi(argv[3]), stoi(argv[4]), stoi(argv[5]), stoi(argv[6]));
+    //return startTransfer(argv[1], argv[2], stoi(argv[3]), stoi(argv[4]), stoi(argv[5]), stoi(argv[6]));
 }
 
 
