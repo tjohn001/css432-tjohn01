@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
                 if (req != nullptr) {
                     char in[MAXLINE];
                     bcopy(buffer, in, MAXLINE);
-                    req->acceptPacket(in);
+                    req->recieve(in);
                 }
             }
             else if (opcode == 4) {
@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
                 if (req != nullptr) {
                     char in[4];
                     bcopy(buffer, in, 4);
-                    req->acceptPacket(in);
+                    req->recieve(in);
                 }
             }
             else if (opcode == 5) {
@@ -117,6 +117,21 @@ int main(int argc, char* argv[]) {
             else {
                 cout << "other packet type";
             }
+        }
+        for (auto i = readVector.begin(); i != readVector.end(); next(i)) {
+            STEP step = i->nextStep();
+            switch (step) {
+            case CLOSE:
+                readVector.erase(i);
+                break;
+            case RETRY:
+                i->send();
+                break;
+            case PROGRESS:
+                i->send();
+                break;
+            }
+            
         }
     }
     close(sockfd); //close socket fd

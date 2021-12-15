@@ -29,11 +29,12 @@ public:
     int retries = 0, curblock = 0, lastack = 0, tid, len, sockfd;
     timeval timeSent;
     STEP curStep = START;
-    char buffer[MAXLINE];
 };
 
 class ReadRequest: public Transaction {
 public:
+    char buffer[MAXLINE];
+    int size, curBlockSize;
     ReadRequest(sockaddr_in addr, int fd) {
         memset(&buffer, 0, MAXLINE);
         client = addr;
@@ -67,7 +68,7 @@ public:
     }
     virtual bool start(string filename) {
         file = fstream(filename, fstream::in | fstream::ate | fstream::binary);
-        if (file.is_open() == false) {
+        if (file.is_open() == false || !file.good()) {
             *((short*)buffer) = 5;
             *((short*)(buffer + 2)) = 1;
             const char* error = "Could not open file\0";
@@ -76,17 +77,56 @@ public:
             sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
             curStep = CLOSE;
         }
+        int end = file.tellg();
+        file.seekg(0, ios::beg);
+        size = end - file.tellg();
+    }
+    virtual bool send() {
+        if (curStep == PROGRESS) {
+            curStep = WAIT;
+            retries = 0;
+            curblock++;
+            *((short*)buffer) = 3;
+            *((short*)(buffer + 2)) = curblock;
+            if (curblock * 512 > size) {
+                curBlockSize = size - ((curblock - 1) * 512);
+            }
+            else {
+                curBlockSize = 512;
+            }
+            cout << "reading file" << endl;
+            file.read(buffer + 4, curBlockSize);
+        }
+        else {
+            curStep = WAIT;
+            retries++;
+        }
+        gettimeofday(&timeSent, NULL);
+        cout << "sending block " << curblock;
+        int status = sendto(sockfd, (const char*)buffer, 4 + curBlockSize, 0, (const struct sockaddr*)&client, len);
+        if (status < 0) {
+            cout << "sending error" << endl;
+        }
+        return true;
+    }
+    //recieves ack: must be 4 bytes
+    virtual bool recieve(char* in) {
+        if (*((short*)(in + 2)) == curblock) {
+            lastack = *((short*)(in + 2));
+            cout << curblock << " block acked" << endl;
+        }
+        else if (*((short*)(in + 2)) != curblock) {
+            cout << "wrong ack recieved: " << lastack << endl;
+        }
     }
 };
 
 class WriteRequest: public Transaction {
 public:
     WriteRequest(string filename, sockaddr_in addr, int fd) {
-        memset(&buffer, 0, MAXLINE);
         client = addr;
         tid = ntohs(client.sin_port);
         gettimeofday(&timeSent, NULL);
-        file = fstream(filename, fstream::out | fstream::binary | fstream::trunc);
         len = sizeof(client);
         sockfd = fd;
     }
@@ -105,5 +145,38 @@ public:
             curStep = WAIT;
             return curStep;
         }
+    }
+    virtual bool start(string filename) {
+        file = fstream(filename, fstream::out | fstream::binary);
+        if (file.is_open() == false) {
+            char buffer[MAXLINE];
+            *((short*)buffer) = 5;
+            *((short*)(buffer + 2)) = 1;
+            const char* error = "Could not open file\0";
+            cout << error << endl;
+            strcpy(buffer + 4, error);
+            sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
+            curStep = CLOSE;
+        }
+        else if (file.good()) {
+            char buffer[MAXLINE];
+            *((short*)buffer) = 5;
+            *((short*)(buffer + 2)) = 6;
+            const char* error = "File already exists\0";
+            cout << error << endl;
+            strcpy(buffer + 4, error);
+            sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
+            curStep = CLOSE;
+        }
+        file.seekg(0, ios::beg);
+    }
+    virtual bool send() {
+        char ack[4];
+        char* tempPtr = ack;
+        *((short*)ack) = 4;
+        *((short*)(ack + 2)) = curblock;
+    }
+    virtual bool recieve(char* in) {
+        return false;
     }
 };
