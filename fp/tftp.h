@@ -1,6 +1,6 @@
 #include <iostream>
+#include <fstream>
 #include <cstring>
-#include <string>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
@@ -8,9 +8,6 @@
 #include <arpa/inet.h>    // inet_ntoa 
 #include <netdb.h>        // gethostbyname 
 #include <unistd.h>       // read, write, close 
-#include <strings.h>      // bzero 
-#include <netinet/tcp.h>  // SO_REUSEADDR 
-#include <pthread.h>
-#include <fstream>
+#include <sys/time.h>
 
 int MAXLINE = 516, PORT = 51949, RETRIES = 10, TIMEOUT = 2;
