@@ -170,7 +170,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }*/
 
-    return createConnection("54948", "test.txt", 2);
+    return createConnection("54948", "test.txt", 1);
 
     //return createConnection(argv[1], argv[2], stoi(argv[3]), stoi(argv[4]), stoi(argv[5]), stoi(argv[6]));
 }

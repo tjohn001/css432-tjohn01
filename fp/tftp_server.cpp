@@ -50,7 +50,7 @@ public:
 };
 
 //int read(Transfer* transfer) {
-int sendFile(char* filename, sockaddr_in recvaddr, int sockfd) {
+int sendFile(string filename, sockaddr_in recvaddr, int sockfd) {
     int tid = ntohs(recvaddr.sin_port);
     ifstream file(filename);
     int end = file.tellg();
@@ -63,7 +63,7 @@ int sendFile(char* filename, sockaddr_in recvaddr, int sockfd) {
     char buffer[MAXLINE];
     char dataBuf[MAXLINE];
     int count, block = 1;
-    /*do {
+    do {
         *((short*)buffer) = 3;
         *((short*)(buffer + 2)) = block;
         int toRead;
@@ -76,12 +76,12 @@ int sendFile(char* filename, sockaddr_in recvaddr, int sockfd) {
         cout << "reading file" << endl;
         file.read(buffer + 4, toRead);
         struct timeval start_time, cur_time; //timer
-        gettimeofday(&start_time, NULL); //start timer
-        gettimeofday(&cur_time, NULL);
         bool blockAcked = false;
         for (int i = 0; i < RETRIES && !blockAcked; i++) {
             cout << "sending bytes: " << toRead << "in block" << block << endl;
             int status = sendto(sockfd, (const char*)buffer, 4 + toRead, 0, (const struct sockaddr*)&recvaddr, len);
+            gettimeofday(&start_time, NULL); //start timer
+            gettimeofday(&cur_time, NULL);
             while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
                 int bytesRead = recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_WAITALL, (struct sockaddr*)&data, (socklen_t*)&dataLen);
                 if (bytesRead >= 4) {
@@ -112,9 +112,12 @@ int sendFile(char* filename, sockaddr_in recvaddr, int sockfd) {
         }
         if (!blockAcked) {
             cout << "retries failed, session ended" << endl;
-            return;
+            file.close();
+            return -1;
         }
-    } while (count == 512);*/
+    } while (count == 512);
+    file.close();
+    return 0;
 }
 
 //main method, server should take 2 args - the port number and the number of iterations
@@ -143,9 +146,7 @@ int main(int argc, char* argv[]) {
     server.sin_port = htons(PORT);
 
     // Bind the socket with the server address
-    if (bind(sockfd, (const struct sockaddr*)&server,
-        sizeof(server)) < 0)
-    {
+    if (bind(sockfd, (const struct sockaddr*)&server, sizeof(server)) < 0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
@@ -165,8 +166,10 @@ int main(int argc, char* argv[]) {
     if (opcode < 1 || opcode > 7) {
         *((short*)buffer) = 5;
         *((short*)(buffer + 2)) = 4;
-        char* error = "Uknown operation";
+        char* error = "Uknown operation\0";
+        cout << error << endl;
         strcpy(buffer + 4, error);
+        sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
     }
     ptr += 2;
     string filename(ptr);
@@ -180,11 +183,13 @@ int main(int argc, char* argv[]) {
     if (filename.find('/') != -1 || filename.find('\\') != -1) {
         *((short*)buffer) = 5;
         *((short*)(buffer + 2)) = 2;
-        char* error = "Attempted to access file path";
+        char* error = "Attempted to access file path\0";
         strcpy(buffer + 4, error);
+        sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
     }
     else if (opcode == 1) {
-        cout << "RRQ :" << filename << endl;
+        sendFile(filename, client, sockfd);
+        /*cout << "RRQ :" << filename << endl;
         ifstream file(filename, ios::ate | ios::binary);
         cout << "file opened" << endl;
         int end = file.tellg();
@@ -218,7 +223,7 @@ int main(int argc, char* argv[]) {
                 cout << "wrong ack #: " << block << " vs " << *((short*)(ack + 2)) << endl;
             }
         }
-        file.close();
+        file.close();*/
     }
     else if (opcode == 2) {
         cout << "WRQ " << filename << endl;
