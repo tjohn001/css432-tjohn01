@@ -1,9 +1,11 @@
+#pragma once
 #include <iostream>
 #include <cstring>
 #include <string>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+#include <sys/time.h>
 #include <netinet/in.h>   // htonl, htons, inet_ntoa 
 #include <arpa/inet.h>    // inet_ntoa 
 #include <netdb.h>        // gethostbyname 
@@ -12,8 +14,8 @@
 #include <netinet/tcp.h>  // SO_REUSEADDR 
 #include <pthread.h>
 #include <fstream>
-
-int MAXLINE = 516, PORT = 51949;
+#include <list>
+#include "tftp.h"
 
 using namespace std;
 
@@ -32,11 +34,88 @@ using namespace std;
     close(args[0]); //close socket fd
 
     int sockfd = *(int*)ptr;
-    struct addrinfo* client = (addrinfo*)(ptr + sizeof(int));
+    struct addrinfo* recvaddr = (addrinfo*)(ptr + sizeof(int));
     char buffer[MAXLINE];
     recvfrom()
 
 }*/
+
+class Transfer {
+public:
+    int tid, filePosition = 0, sockfd, size, opmode, clientlen;
+    fstream file;
+    short block = 0;
+    sockaddr_in client;
+    list<Transfer> *list;
+};
+
+//int read(Transfer* transfer) {
+int sendFile(char* filename, sockaddr_in recvaddr, int sockfd) {
+    int tid = ntohs(recvaddr.sin_port);
+    ifstream file(filename);
+    int end = file.tellg();
+    file.seekg(0, ios::beg);
+    int size = end - file.tellg();
+    struct sockaddr_in data;
+    memset(&data, 0, sizeof(data));
+    int len = sizeof(recvaddr);
+    int dataLen = sizeof(data);
+    char buffer[MAXLINE];
+    char dataBuf[MAXLINE];
+    int count, block = 1;
+    /*do {
+        *((short*)buffer) = 3;
+        *((short*)(buffer + 2)) = block;
+        int toRead;
+        if (block * 512 > size) {
+            toRead = size - ((block - 1) * 512);
+        }
+        else {
+            toRead = 512;
+        }
+        cout << "reading file" << endl;
+        file.read(buffer + 4, toRead);
+        struct timeval start_time, cur_time; //timer
+        gettimeofday(&start_time, NULL); //start timer
+        gettimeofday(&cur_time, NULL);
+        bool blockAcked = false;
+        for (int i = 0; i < RETRIES && !blockAcked; i++) {
+            cout << "sending bytes: " << toRead << "in block" << block << endl;
+            int status = sendto(sockfd, (const char*)buffer, 4 + toRead, 0, (const struct sockaddr*)&recvaddr, len);
+            while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
+                int bytesRead = recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_WAITALL, (struct sockaddr*)&data, (socklen_t*)&dataLen);
+                if (bytesRead >= 4) {
+                    if (tid == ntohs(data.sin_port)) {
+                        if (*((short*)dataBuf) == 5) {
+                            string error(dataBuf + 4);
+                            cout << "Error " << *((short*)(dataBuf + 2)) << error << endl;
+                            return;
+                        }
+                        else if (*((short*)dataBuf) == 4) {
+                            if (*((short*)(dataBuf + 2)) == block) {
+                                cout << "block acked" << endl;
+                                blockAcked = true;
+                                block++;
+                                break;
+                            }
+                            else if (*((short*)(dataBuf + 2)) != block) {
+                                cout << "wrong ack recieved" << endl;
+                            }
+                        }
+                    }
+                }
+                gettimeofday(&cur_time, NULL);
+            }
+            if (!blockAcked) {
+                cout << "timed out waiting for ack, retrying..." << endl;
+            }
+        }
+        if (!blockAcked) {
+            cout << "retries failed, session ended" << endl;
+            return;
+        }
+    } while (count == 512);*/
+}
 
 //main method, server should take 2 args - the port number and the number of iterations
 int main(int argc, char* argv[]) {
@@ -70,7 +149,11 @@ int main(int argc, char* argv[]) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
-
+    timeval tv;
+    tv.tv_sec = TIMEOUT; /* seconds */
+    tv.tv_usec = 0;
+    //if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv) < 0))
+        cout << "Cannot Set SO_SNDTIMEO for socket" << endl;
     int len;
 
     len = sizeof(client); //len is value/resuslt
@@ -79,6 +162,12 @@ int main(int argc, char* argv[]) {
     //TODO: add check that ptr < bytes read
     char* ptr = buffer;
     short opcode = *((short*)ptr);
+    if (opcode < 1 || opcode > 7) {
+        *((short*)buffer) = 5;
+        *((short*)(buffer + 2)) = 4;
+        char* error = "Uknown operation";
+        strcpy(buffer + 4, error);
+    }
     ptr += 2;
     string filename(ptr);
     ptr += filename.length() + 1;
@@ -88,7 +177,13 @@ int main(int argc, char* argv[]) {
 
     cout << "opcode: " << opcode << ", filename: " << filename << ", mode: " << mode << endl;
 
-    if (opcode == 1) {
+    if (filename.find('/') != -1 || filename.find('\\') != -1) {
+        *((short*)buffer) = 5;
+        *((short*)(buffer + 2)) = 2;
+        char* error = "Attempted to access file path";
+        strcpy(buffer + 4, error);
+    }
+    else if (opcode == 1) {
         cout << "RRQ :" << filename << endl;
         ifstream file(filename, ios::ate | ios::binary);
         cout << "file opened" << endl;
@@ -98,7 +193,7 @@ int main(int argc, char* argv[]) {
         //ptr = buffer;
         char ack[4];
         cout << "start: " << file.tellg() << " end: " << end << " size: " << size;
-        for (int block = 1; file.tellg() < end; block++) {
+        for (int block = 1; file.tellg() <= end; block++) {
             *((short*)buffer) = 3;
             *((short*)(buffer + 2)) = block;
             int toRead;
@@ -122,23 +217,6 @@ int main(int argc, char* argv[]) {
             else if (*((short*)(ack + 2)) != block) {
                 cout << "wrong ack #: " << block << " vs " << *((short*)(ack + 2)) << endl;
             }
-
-            //if last block is exactly 512 bytes, send exta size 0 block
-            if (block * 512 == size) {
-                block++;
-                *((short*)(buffer + 2)) = block;
-                sendto(sockfd, buffer, 4, MSG_CONFIRM, (const struct sockaddr*)&client, len);
-                bytesRead = recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
-                if (bytesRead != 4) {
-                    cout << "packet error";
-                }
-                else if (*((short*)ack) != 4) {
-                    cout << "wrong packet type";
-                }
-                else if (*((short*)(ack + 2)) != block) {
-                    cout << "wrong ack #";
-                }
-            }  
         }
         file.close();
     }

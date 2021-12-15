@@ -1,8 +1,5 @@
-/*
-* Taylor Johnston
-* Client side application that sends a given number of iterations of 1500 bytes seperated into given buffer sizes using one of 3 methods
-* total buffer size adds up to 1500 bytes to given port on a server, then recieves number of bytesRead operations the server performed
-*/
+
+#pragma once
 #include <iostream>
 #include <cstring>
 #include <sys/types.h>
@@ -11,6 +8,7 @@
 #include <sys/uio.h>
 #include <unistd.h>
 #include <fstream>
+#include "tftp.h"
 
 int MAXLINE = 516, PORT = 51949;
 
@@ -22,7 +20,7 @@ int createConnection(const char* port, const char* filename, const short opcode)
 
     int sockfd;
     char buffer[MAXLINE];
-    struct sockaddr_in	 server;
+    struct sockaddr_in server;
 
     // Creating socket file descriptor
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
