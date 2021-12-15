@@ -36,7 +36,8 @@ int sendFile(string filename, sockaddr_in recvaddr, int sockfd) {
             gettimeofday(&start_time, NULL); //start timer
             gettimeofday(&cur_time, NULL);
             while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
-                int bytesRead = recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_WAITALL, (struct sockaddr*)&data, (socklen_t*)&dataLen);
+                cout << "waiting for packet" << endl;
+                int bytesRead = recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&data, (socklen_t*)&dataLen);
                 if (bytesRead >= 4) {
                     if (tid == ntohs(data.sin_port)) {
                         if (*((short*)dataBuf) == 5) {
@@ -75,15 +76,12 @@ int sendFile(string filename, sockaddr_in recvaddr, int sockfd) {
 }
 
 int writeFile(string filename, sockaddr_in recvaddr, int sockfd) {
-
+    return -1;
 }
 
-void processPacket(char* buffer, int sockfd) {
-    struct sockaddr_in client;
-    memset(&client, 0, sizeof(client));
-    int len = sizeof(client); //len is value/resuslt
-
-    int bytesRead = recvfrom(sockfd, (char*)buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
+void processPacket(char* buffer, struct sockaddr_in client, int len, int sockfd) {
+    int bytesRead = recvfrom(sockfd, (char*)buffer, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&client, (socklen_t*)&len);
+    if (bytesRead <= 0) return;
     //TODO: add check that ptr < bytes read
     char* ptr = buffer;
     short opcode = *((short*)ptr);
@@ -101,8 +99,6 @@ void processPacket(char* buffer, int sockfd) {
         ptr += filename.length() + 1;
         string mode(ptr);
 
-        cout << endl;
-
         cout << "opcode: " << opcode << ", filename: " << filename << ", mode: " << mode << endl;
         int pid = fork();
         if (pid != 0) { //let child handle process
@@ -116,6 +112,9 @@ void processPacket(char* buffer, int sockfd) {
         if (pid < 0) {
             cout << "fork error" << endl;
         }
+    }
+    else {
+        cout << "other packet type";
     }
 }
 
@@ -149,9 +148,11 @@ int main(int argc, char* argv[]) {
     tv.tv_usec = 0;
     //if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv) < 0))
         //cout << "Cannot Set SO_SNDTIMEO for socket" << endl;
-    
+    struct sockaddr_in client;
+    memset(&client, 0, sizeof(client));
+    int len = sizeof(client); //len is value/resuslt
     while (true) {
-        processPacket(buffer, sockfd);
+        processPacket(buffer, client, len, sockfd);
     }
     close(sockfd); //close socket fd
     return 0;
