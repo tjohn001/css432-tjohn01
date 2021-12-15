@@ -49,6 +49,13 @@ public:
         if (curStep == CLOSE) {
             return CLOSE;
         }
+        else if (curStep == START) {
+            return START;
+        }
+        else if (curBlockSize < MAXLINE && lastack == curblock) {
+            curStep = CLOSE;
+            return curStep;
+        }
         else if (retries >= RETRIES) {
             curStep = CLOSE;
             return curStep;
@@ -80,6 +87,7 @@ public:
         int end = file.tellg();
         file.seekg(0, ios::beg);
         size = end - file.tellg();
+        curStep = PROGRESS;
     }
     virtual bool send() {
         if (curStep == PROGRESS) {
@@ -123,7 +131,7 @@ public:
 
 class WriteRequest: public Transaction {
 public:
-    WriteRequest(string filename, sockaddr_in addr, int fd) {
+    WriteRequest(sockaddr_in addr, int fd) {
         client = addr;
         tid = ntohs(client.sin_port);
         gettimeofday(&timeSent, NULL);
@@ -133,9 +141,19 @@ public:
     virtual STEP nextStep() {
         timeval curtime;
         gettimeofday(&curtime, NULL);
-        if (retries >= RETRIES) {
+        if (curStep == CLOSE) {
+            return CLOSE;
+        }
+        else if (curStep == START) {
+            return START;
+        }
+        else if (retries >= RETRIES) {
             curStep = CLOSE;
             return curStep;
+        }
+        else if (lastack < curblock) {
+            curStep = PROGRESS;
+            return PROGRESS;
         }
         else if (curtime.tv_sec - timeSent.tv_sec >= TIMEOUT) {
             curStep = RETRY;
@@ -169,14 +187,30 @@ public:
             curStep = CLOSE;
         }
         file.seekg(0, ios::beg);
+        curStep = PROGRESS;
     }
     virtual bool send() {
+        if (curStep == PROGRESS) {
+            lastack = curblock;
+            retries = 0;
+            curStep = WAIT;
+        }
         char ack[4];
         char* tempPtr = ack;
         *((short*)ack) = 4;
-        *((short*)(ack + 2)) = curblock;
+        *((short*)(ack + 2)) = lastack;
+        sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&client, len);
+        gettimeofday(&timeSent, NULL);
+        retries++;
     }
-    virtual bool recieve(char* in) {
-        return false;
+    virtual bool recieve(char* in, int nbytes) {
+        char* readPtr = in + 2;
+        short curblock = max(*((short*)readPtr),curblock);
+        readPtr += 2;
+        file.write(readPtr, nbytes - 4);
+        if (nbytes < MAXLINE) {
+            curStep = CLOSE;
+        }
+        return true;
     }
 };

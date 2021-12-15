@@ -1,6 +1,8 @@
 //#pragma once
 #include "tftp.h"
-#include<bits/stdc++.h>
+//#include<bits/stdc++.h>
+#include <chrono>
+#include <thread>
 using namespace std;
 
 ReadRequest* findClientInRRQQueue(vector<ReadRequest> queue, sockaddr_in client) {
@@ -96,7 +98,7 @@ int main(int argc, char* argv[]) {
                 if (req != nullptr) {
                     char in[MAXLINE];
                     bcopy(buffer, in, MAXLINE);
-                    req->recieve(in);
+                    req->recieve(in, bytesRead);
                 }
             }
             else if (opcode == 4) {
@@ -108,9 +110,16 @@ int main(int argc, char* argv[]) {
                 }
             }
             else if (opcode == 5) {
-                for (int i = 0; i < readVector.size(); i++) {
-                    if (readVector.at(i).tid == ntohs(client.sin_port)) {
-                        readVector.erase(readVector.begin() + i);
+                for (auto i = readVector.begin(); i != readVector.end(); next(i)) {
+                    if (i->tid == ntohs(client.sin_port)) {
+                        i->curStep = CLOSE;
+                        readVector.erase(i);
+                    }
+                }
+                for (auto i = writeVector.begin(); i != writeVector.end(); next(i)) {
+                    if (i->tid == ntohs(client.sin_port)) {
+                        i->curStep = CLOSE;
+                        writeVector.erase(i);
                     }
                 }
             }
@@ -131,8 +140,22 @@ int main(int argc, char* argv[]) {
                 i->send();
                 break;
             }
-            
         }
+        for (auto i = writeVector.begin(); i != writeVector.end(); next(i)) {
+            STEP step = i->nextStep();
+            switch (step) {
+            case CLOSE:
+                writeVector.erase(i);
+                break;
+            case RETRY:
+                i->send();
+                break;
+            case PROGRESS:
+                i->send();
+                break;
+            }
+        }
+        this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     close(sockfd); //close socket fd
     return 0;
