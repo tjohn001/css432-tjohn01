@@ -1,5 +1,5 @@
 
-#pragma once
+//#pragma once
 #include <iostream>
 #include <cstring>
 #include <sys/types.h>
