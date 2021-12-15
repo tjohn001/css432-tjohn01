@@ -47,11 +47,10 @@ int sendFile(string filename, sockaddr_in recvaddr, int sockfd) {
     int dataLen = sizeof(data);
     char buffer[MAXLINE];
     char dataBuf[MAXLINE];
-    int count, block = 1;
+    int toRead, block = 1;
     do {
         *((short*)buffer) = 3;
         *((short*)(buffer + 2)) = block;
-        int toRead;
         if (block * 512 > size) {
             toRead = size - ((block - 1) * 512);
         }
@@ -101,7 +100,7 @@ int sendFile(string filename, sockaddr_in recvaddr, int sockfd) {
             file.close();
             return -1;
         }
-    } while (count == 512);
+    } while (toRead == 512);
     file.close();
     return 0;
 }
