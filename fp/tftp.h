@@ -41,7 +41,7 @@ public:
 class ReadRequest: public Transaction {
 public:
     char buffer[MAXLINE];
-    int curBlockSize;
+    int curBlockSize = 512;
     long size;
     ReadRequest(sockaddr_in addr, int fd) {
         memset(&buffer, 0, MAXLINE);
