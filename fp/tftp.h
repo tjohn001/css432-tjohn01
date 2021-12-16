@@ -104,7 +104,7 @@ public:
         file.seekg(0, ios::beg);
         size = end - file.tellg();
         curStep = PROGRESS;
-        cout << "start finished";
+        cout << "start finished" << endl;
         return true;
     }
     virtual bool send() {
@@ -129,7 +129,7 @@ public:
             retries++;
         }
         gettimeofday(&timeSent, NULL);
-        cout << "sending block " << curblock;
+        cout << "sending block " << curblock << endl;
         int status = (int) sendto(sockfd, (const char*)buffer, 4 + curBlockSize, 0, (const struct sockaddr*)&client, len);
         if (status < 0) {
             cout << "sending error" << endl;

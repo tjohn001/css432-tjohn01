@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
     while (true) {
         int bytesRead = recvfrom(sockfd, (char*)buffer, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&client, (socklen_t*)&len);
         if (bytesRead > 0) {
-            cout << "recieved packet" << endl;
+            cout << "recieved packet length: " << bytesRead << endl;
             //TODO: add check that ptr < bytes read
             char* ptr = buffer;
             short opcode = *((short*)ptr);
@@ -164,6 +164,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
         }
+        cout << "completed loop" << endl
         this_thread::sleep_for(std::chrono::milliseconds(100)); //for server stability
     }
     close(sockfd); //close socket fd
