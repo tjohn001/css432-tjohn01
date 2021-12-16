@@ -82,6 +82,7 @@ public:
         }
     }
     virtual bool start(string filename) {
+        cout << "running start" << endl;
         file = fstream(filename, fstream::in | fstream::ate | fstream::binary);
         if (file.is_open() == false || !file.good()) {
             *((short*)buffer) = 5;
@@ -97,9 +98,11 @@ public:
         file.seekg(0, ios::beg);
         size = end - file.tellg();
         curStep = PROGRESS;
+        cout << "start finished";
         return true;
     }
     virtual bool send() {
+        cout << "send()" << endl;
         if (curStep == PROGRESS) {
             curStep = WAIT;
             retries = 0;
@@ -129,6 +132,7 @@ public:
     }
     //recieves ack: must be 4 bytes
     virtual bool recieve(char* in) {
+        cout << "recieving packet" << endl;
         if (*((short*)(in + 2)) == curblock) {
             lastack = *((short*)(in + 2));
             cout << curblock << " block acked" << endl;

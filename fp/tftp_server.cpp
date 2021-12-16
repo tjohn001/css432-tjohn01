@@ -58,6 +58,7 @@ int main(int argc, char* argv[]) {
     while (true) {
         int bytesRead = recvfrom(sockfd, (char*)buffer, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&client, (socklen_t*)&len);
         if (bytesRead > 0) {
+            cout << "recieved packet" << endl;
             //TODO: add check that ptr < bytes read
             char* ptr = buffer;
             short opcode = *((short*)ptr);
@@ -131,15 +132,19 @@ int main(int argc, char* argv[]) {
             }
         }
         for (auto i = readVector.begin(); i != readVector.end(); next(i)) {
+            cout << "stepping through readvector" << endl;
             STEP step = i->nextStep();
             switch (step) {
             case CLOSE:
+                cout << "closing transaction" << endl;
                 readVector.erase(i);
                 break;
             case RETRY:
+                cout << "retrying" << endl;
                 i->send();
                 break;
             case PROGRESS:
+                cout << "progressing" << endl;
                 i->send();
                 break;
             default:
@@ -147,6 +152,7 @@ int main(int argc, char* argv[]) {
             }
         }
         for (auto i = writeVector.begin(); i != writeVector.end(); next(i)) {
+            cout << "stepping through writevector" << endl;
             STEP step = i->nextStep();
             switch (step) {
             case CLOSE:
@@ -160,7 +166,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
         }
-        this_thread::sleep_for(std::chrono::milliseconds(100));
+        this_thread::sleep_for(std::chrono::milliseconds(100)); //for server stability
     }
     close(sockfd); //close socket fd
     return 0;
