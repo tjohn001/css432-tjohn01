@@ -204,7 +204,7 @@ public:
             curStep = CLOSE;
             return false;
         }
-        else if (file.good()) {
+        /*else if (file.good()) {
             char buffer[MAXLINE];
             *((short*)buffer) = 5;
             *((short*)(buffer + 2)) = 6;
@@ -214,7 +214,7 @@ public:
             sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
             curStep = CLOSE;
             return false;
-        }
+        }*/
         file.seekg(0, ios::beg);
         lastack = -1;
         curblock = 0;
