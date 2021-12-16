@@ -235,7 +235,7 @@ public:
             cout << (int)ack[i];
         }
         cout << endl;
-        int status = (int) sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&client, len);
+        int status = (int)sendto(sockfd, (const char*)ack, 4, 0, (const struct sockaddr*)&client, len);
         if (status < 0) {
             cout << "sending error" << endl;
         }

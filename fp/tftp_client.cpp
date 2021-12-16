@@ -89,10 +89,10 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
     }
     else if (opcode == 2) {
         cout << "WRQ :" << filename << endl;
-        char ack[4];
+        char ack[MAXLINE];
         int bytesRead = 0;
         for (int i = 0; i < RETRIES; i++) {
-            bytesRead = (int)recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&server);
+            bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&server);
             if (bytesRead < 4) {
                 cout << "packet error" << bytesRead << endl;
                 continue;
