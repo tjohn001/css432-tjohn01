@@ -97,12 +97,11 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         bool transAcked = false;
         while(retries < RETRIES && !transAcked) {
             sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
+            gettimeofday(&start_time, NULL);
             while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !transAcked) {
                 bytesRead = (int)recvfrom(sockfd, (char*)ack, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
-                if (bytesRead > 0) {
-                    //retries = 0;
-                }
                 if (bytesRead > 4) {
+                    retries = 0;
                     if (ntohs(*((short*)ack)) == 5) {
                         cout << "recieved error" << endl;
                         return 0;
@@ -110,14 +109,18 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                     else if (ntohs(*((short*)ack)) != 4) {
                         cout << "wrong packet type" << ntohs(*((short*)ack)) << endl;
                     }
-                    else if (*((short*)(ack + 2)) != 0) {
+                    else if (ntohs(*((short*)(ack + 2))) != 0) {
                         cout << "ack not 0: " << ntohs(*((short*)(ack + 2))) << endl;
                     }
-                    else if (*((short*)(ack + 2)) != 0) {
+                    else if (ntohs(*((short*)(ack + 2))) == 0) {
                         cout << "ack 0 recieved" << endl;
                         transAcked = true;
                     }
                 }
+                gettimeofday(&cur_time, NULL);
+            }
+            if (!transAcked) {
+                cout << "timed out waiting for ack, retrying..." << endl;
             }
             retries++;
         }
