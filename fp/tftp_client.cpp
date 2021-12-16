@@ -93,7 +93,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         int retries = 0;
         while(retries < RETRIES) {
             sendto(sockfd, buffer, ptr - buffer, MSG_CONFIRM, (const struct sockaddr*)&server, len);
-            bytesRead = (int)recvfrom(sockfd, (char*)ack, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
+            bytesRead = (int)recvfrom(sockfd, (char*)ack, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
             if (bytesRead < 4) {
                 cout << "packet error: " << strerror(errno) << endl;
                 continue;
@@ -150,14 +150,14 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                     continue;
                 }
                 //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
-                int bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&data, (socklen_t*)&dataLen);
+                int bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_WAITALL, (struct sockaddr*)&data, (socklen_t*)&dataLen);
                 if (bytesRead >= 4) {
                     cout << "packet recieved" << endl;
                     if (ntohs(*((short*)dataBuf)) == 5) {
                         string error(dataBuf + 4);
                         cout << "Error " << ntohs(*((short*)(dataBuf + 2))) << ": " << error << endl;
                         file.close();
-                        return -1;
+                        return 0;
                     }
                     else if (ntohs(*((short*)dataBuf)) == 4) {
                         if (ntohs(*((short*)(dataBuf + 2))) == curblock) {
@@ -178,7 +178,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
             if (!blockAcked) {
                 cout << "retries failed, session ended" << endl;
                 file.close();
-                return -1;
+                return 0;
             }
         } while (toRead == 512);
         file.close();
