@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
                 }
             }
             else if (opcode == 3) {
-                for (auto i = writeVector.begin(); i != writeVector.end(); next(i)) {
+                for (auto i = writeVector.begin(); i != writeVector.end(); i++) {
                     if (i->tid == ntohs(client.sin_port)) {
                         char in[MAXLINE];
                         bcopy(buffer, in, MAXLINE);
@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
                 }
             }
             else if (opcode == 4) {
-                for (auto i = readVector.begin(); i != readVector.end(); next(i)) {
+                for (auto i = readVector.begin(); i != readVector.end(); i++) {
                     if (i->tid == ntohs(client.sin_port)) {
                         char in[4];
                         bcopy(buffer, in, 4);
@@ -114,13 +114,13 @@ int main(int argc, char* argv[]) {
                 }
             }
             else if (opcode == 5) {
-                for (auto i = readVector.begin(); i != readVector.end(); next(i)) {
+                for (auto i = readVector.begin(); i != readVector.end(); i++) {
                     if (i->tid == ntohs(client.sin_port)) {
                         i->curStep = CLOSE;
                         readVector.erase(i);
                     }
                 }
-                for (auto i = writeVector.begin(); i != writeVector.end(); next(i)) {
+                for (auto i = writeVector.begin(); i != writeVector.end(); i++) {
                     if (i->tid == ntohs(client.sin_port)) {
                         i->curStep = CLOSE;
                         writeVector.erase(i);
