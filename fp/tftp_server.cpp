@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
                     for (auto i = readVector.begin(); i != readVector.end(); i++) {
                         if (i->tid = ntohs(client.sin_port)) {
                             tidExists = true;
-                            cout << "tid already has connection";
+                            cout << "tid already has connection" << endl;
                             break;
                         }
                     }
@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
                     for (auto i = writeVector.begin(); i != writeVector.end(); i++) {
                         if (i->tid = ntohs(client.sin_port)) {
                             tidExists = true;
-                            cout << "tid already has connection";
+                            cout << "tid already has connection" << endl;
                             break;
                         }
                     }

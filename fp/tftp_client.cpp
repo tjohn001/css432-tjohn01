@@ -99,8 +99,12 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
             sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
             gettimeofday(&start_time, NULL);
             while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !transAcked) {
-                bytesRead = (int)recvfrom(sockfd, (char*)ack, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
+                bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+                if (bytesRead < 0) {
+                    cout << "recv error: " << strerror(errno) << endl;
+                }
                 if (bytesRead > 4) {
+                    cout << "packet recieved" << endl;
                     retries = 0;
                     if (ntohs(*((short*)ack)) == 5) {
                         cout << "recieved error" << endl;
