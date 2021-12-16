@@ -132,7 +132,6 @@ int main(int argc, char* argv[]) {
             }
         }
         for (auto i = readVector.begin(); i != readVector.end(); next(i)) {
-            cout << "stepping through readvector" << endl;
             STEP step = i->nextStep();
             switch (step) {
             case CLOSE:
@@ -152,7 +151,6 @@ int main(int argc, char* argv[]) {
             }
         }
         for (auto i = writeVector.begin(); i != writeVector.end(); next(i)) {
-            cout << "stepping through writevector" << endl;
             STEP step = i->nextStep();
             switch (step) {
             case CLOSE:
