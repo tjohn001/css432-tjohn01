@@ -114,14 +114,14 @@ int main(int argc, char* argv[]) {
                 }
             }
             else if (opcode == 5) {
-                for (auto i = readVector.begin(); i != readVector.end(); i++) {
+                for (auto i = readVector.begin(); i != readVector.end() && !readVector.empty(); i++) {
                     if (i->tid == ntohs(client.sin_port)) {
                         i->curStep = CLOSE;
                         i = readVector.erase(i);
                         break;
                     }
                 }
-                for (auto i = writeVector.begin(); i != writeVector.end(); i++) {
+                for (auto i = writeVector.begin(); i != writeVector.end() && !writeVector.empty(); i++) {
                     if (i->tid == ntohs(client.sin_port)) {
                         i->curStep = CLOSE;
                         i = writeVector.erase(i);
@@ -133,13 +133,12 @@ int main(int argc, char* argv[]) {
                 cout << "other packet type";
             }
         }
-        for (auto i = readVector.begin(); i != readVector.end(); i++) {
+        for (auto i = readVector.begin(); i != readVector.end() && !readVector.empty(); i++) {
             STEP step = i->nextStep();
             switch (step) {
             case CLOSE:
                 cout << "closing transaction" << endl;
                 i = readVector.erase(i);
-                cout << "seg fault here?" << endl;
                 break;
             case RETRY:
                 cout << "retrying" << endl;
@@ -153,7 +152,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
         }
-        for (auto i = writeVector.begin(); i != writeVector.end(); i++) {
+        for (auto i = writeVector.begin(); i != writeVector.end() && !writeVector.empty(); i++) {
             STEP step = i->nextStep();
             switch (step) {
             case CLOSE:
