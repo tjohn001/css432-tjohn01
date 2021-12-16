@@ -91,7 +91,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         char ack[4];
         int bytesRead = 0;
         for (int i = 0; i < RETRIES; i++) {
-            bytesRead = (int)recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&recvaddr, (socklen_t*)&recvaddr);
+            bytesRead = (int)recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&server);
             if (bytesRead != 4) {
                 cout << "packet error" << endl;
                 continue;
@@ -115,7 +115,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         cout << "start: " << file.tellg() << " end: " << end << " size: " << size << endl;
         struct sockaddr_in data;
         memset(&data, 0, sizeof(data));
-        int len = sizeof(recvaddr);
+        int len = sizeof(server);
         int dataLen = sizeof(data);
         char buffer[MAXLINE];
         char dataBuf[MAXLINE];
@@ -135,7 +135,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
             bool blockAcked = false;
             for (int i = 0; i < RETRIES && !blockAcked; i++) {
                 cout << "sending bytes: " << toRead << "in block" << curblock << endl;
-                int status = sendto(sockfd, (const char*)buffer, 4 + toRead, 0, (const struct sockaddr*)&recvaddr, len);
+                int status = sendto(sockfd, (const char*)buffer, 4 + toRead, 0, (const struct sockaddr*)&server, len);
                 if (status < 0) {
                     cout << "sending error" << endl;
                     continue;
