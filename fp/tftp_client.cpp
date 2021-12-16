@@ -18,6 +18,8 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         exit(EXIT_FAILURE);
     }
 
+    const int yes = 0;
+
     memset(&server, 0, sizeof(server));
 
     // Filling server information

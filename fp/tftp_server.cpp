@@ -35,6 +35,9 @@ int main(int argc, char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    const int yes = 0;
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(yes));
+
     memset(&server, 0, sizeof(server));
     memset(&client, 0, sizeof(client));
 
