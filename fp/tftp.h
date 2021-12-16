@@ -231,6 +231,10 @@ public:
         char ack[4];
         *((short*)ack) = 4;
         *((short*)(ack + 2)) = lastack;
+        for (int i = 0; i < 4; i++) {
+            cout << (int)ack[i];
+        }
+        cout << endl;
         int status = (int) sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&client, len);
         if (status < 0) {
             cout << "sending error" << endl;
