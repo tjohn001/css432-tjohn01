@@ -27,12 +27,12 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
     server.sin_port = htons(PORT);
     server.sin_addr.s_addr = inet_addr(HOST_ADDRESS);
 
-    timeval timeSent;
+    struct timeval timeSent;
     timeSent.tv_sec = TIMEOUT; /* seconds */
     timeSent.tv_usec = 0;
 
-    if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeSent, sizeof(timeSent) < 0))
-        cout << "Cannot Set SO_SNDTIMEO for socket" << endl;
+    if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&timeSent, sizeof(timeSent) < 0))
+        cout << "Cannot Set SO_RCVTIMEO for socket: " << strerror(errno) << endl;
 
     int len = sizeof(server);
 
@@ -46,10 +46,9 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
     strcpy(ptr, "octet");
     ptr += sizeof("octet");
     *ptr = 0;
-    
-    sendto(sockfd, buffer, ptr - buffer, MSG_CONFIRM, (const struct sockaddr*)&server, len);
 
     if (opcode == 1) {
+        sendto(sockfd, buffer, ptr - buffer, MSG_CONFIRM, (const struct sockaddr*)&server, len);
         cout << "RRQ " << filename << endl;
         ofstream file (filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
@@ -92,6 +91,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         char ack[MAXLINE];
         int bytesRead = 0;
         for (int i = 0; i < RETRIES; i++) {
+            sendto(sockfd, buffer, ptr - buffer, MSG_CONFIRM, (const struct sockaddr*)&server, len);
             bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&server);
             if (bytesRead < 4) {
                 cout << "packet error" << bytesRead << endl;

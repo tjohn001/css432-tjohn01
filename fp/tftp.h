@@ -232,7 +232,7 @@ public:
         *((short*)(ack)) = 4;
         *((short*)(ack + 2)) = lastack;
         for (int i = 0; i < 4; i++) {
-            cout << (int)ack[i];
+            cout << "opcode: " << *((short*)(ack)) << ", ack: " << *((short*)(ack + 2) << endl;
         }
         cout << endl;
         int status = (int)sendto(sockfd, (const char*)ack, 4, 0, (const struct sockaddr*)&client, len);
@@ -245,6 +245,7 @@ public:
     }
     virtual bool recieve(char* in, int nbytes) {
         char* readPtr = in + 2;
+        cout << "WRQ recieve data" << *((short*)readPtr) << endl;
         if (*((short*)readPtr) == curblock + 1) {
             curblock = *((short*)readPtr);
             readPtr += 2;
