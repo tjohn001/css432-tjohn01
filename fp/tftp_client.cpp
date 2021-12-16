@@ -65,7 +65,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                 cout << "error";
                 return -1;
             }
-            else if (*((short*)buffer) != 3) {
+            else if (ntohs(*((short*)buffer)) != 3) {
                 cout << "wrong packet type: " << ntohs(*((short*)buffer)) << endl;
             }
             else {

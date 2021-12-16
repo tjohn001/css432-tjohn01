@@ -62,6 +62,8 @@ int main(int argc, char* argv[]) {
             //TODO: add check that ptr < bytes read
             char* ptr = buffer;
             short opcode = ntohs(*((short*)ptr));
+            
+
             if (opcode < 1 || opcode > 5) {
                 *((short*)buffer) = htons(5);
                 *((short*)(buffer + 2)) = htons(4);
