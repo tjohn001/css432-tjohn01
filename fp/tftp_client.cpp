@@ -94,7 +94,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         int bytesRead = 0;
         for (int i = 0; i < RETRIES; i++) {
             bytesRead = (int)recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&server);
-            if (bytesRead != 4) {
+            if (bytesRead < 4) {
                 cout << "packet error" << endl;
                 continue;
             }

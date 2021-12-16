@@ -192,7 +192,7 @@ public:
         }
     }
     virtual bool start(string filename) {
-        file = fstream(filename, fstream::out | fstream::binary);
+        file = fstream(filename, fstream::out | fstream::binary | fstream::trunc);
         if (file.is_open() == false) {
             char buffer[MAXLINE];
             *((short*)buffer) = 5;
@@ -227,6 +227,7 @@ public:
             retries = 0;
             curStep = WAIT;
         }
+        cout << "WRQ send: ack " << lastack << endl;
         char ack[4];
         *((short*)ack) = 4;
         *((short*)(ack + 2)) = lastack;
