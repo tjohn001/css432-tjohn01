@@ -117,13 +117,15 @@ int main(int argc, char* argv[]) {
                 for (auto i = readVector.begin(); i != readVector.end(); i++) {
                     if (i->tid == ntohs(client.sin_port)) {
                         i->curStep = CLOSE;
-                        readVector.erase(i);
+                        i = readVector.erase(i);
+                        break;
                     }
                 }
                 for (auto i = writeVector.begin(); i != writeVector.end(); i++) {
                     if (i->tid == ntohs(client.sin_port)) {
                         i->curStep = CLOSE;
-                        writeVector.erase(i);
+                        i = writeVector.erase(i);
+                        break;
                     }
                 }
             }
@@ -136,7 +138,7 @@ int main(int argc, char* argv[]) {
             switch (step) {
             case CLOSE:
                 cout << "closing transaction" << endl;
-                readVector.erase(i);
+                i = readVector.erase(i);
                 cout << "seg fault here?" << endl;
                 break;
             case RETRY:
@@ -155,7 +157,7 @@ int main(int argc, char* argv[]) {
             STEP step = i->nextStep();
             switch (step) {
             case CLOSE:
-                writeVector.erase(i);
+                i = writeVector.erase(i);
                 break;
             case RETRY:
                 i->send();
