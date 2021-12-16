@@ -89,8 +89,8 @@ public:
         cout << "running start" << endl;
         file = fstream(filename, fstream::in | fstream::ate | fstream::binary);
         if (file.is_open() == false || !file.good()) {
-            *((short*)buffer) = 5;
-            *((short*)(buffer + 2)) = 1;
+            *((short*)buffer) = htons(5);
+            *((short*)(buffer + 2)) = htons(1);
             const char* error = "Could not open file\0";
             cout << error << endl;
             strcpy(buffer + 4, error);
@@ -112,8 +112,8 @@ public:
             retries = 0;
             curblock++;
             cout << "progress" << endl;
-            *((short*)buffer) = 3;
-            *((short*)(buffer + 2)) = curblock;
+            *((short*)buffer) = htons(3);
+            *((short*)(buffer + 2)) = htons(curblock);
             if (curblock * 512 > size) {
                 curBlockSize = size - ((curblock - 1) * 512);
             }
@@ -137,12 +137,13 @@ public:
     }
     //recieves ack: must be 4 bytes
     virtual bool recieve(char* in) {
+        retries = 0;
         cout << "recieving packet" << endl;
-        if (*((short*)(in + 2)) == curblock) {
-            lastack = *((short*)(in + 2));
+        if (ntohs(*((short*)(in + 2))) == curblock) {
+            lastack = ntohs(*((short*)(in + 2)));
             cout << curblock << " block acked" << endl;
         }
-        else if (*((short*)(in + 2)) != curblock) {
+        else if (ntohs(*((short*)(in + 2))) != curblock) {
             cout << "wrong ack recieved: " << lastack << endl;
             return false;
         }
@@ -195,8 +196,8 @@ public:
         file = fstream(filename, fstream::out | fstream::binary | fstream::trunc);
         if (file.is_open() == false) {
             char buffer[MAXLINE];
-            *((short*)buffer) = 5;
-            *((short*)(buffer + 2)) = 1;
+            *((short*)buffer) = htons(5);
+            *((short*)(buffer + 2)) = htons(1);
             const char* error = "Could not open file\0";
             cout << error << endl;
             strcpy(buffer + 4, error);
@@ -229,10 +230,10 @@ public:
         }
         cout << "WRQ send: ack " << lastack << endl;
         char ack[4];
-        *((short*)(ack)) = 4;
-        *((short*)(ack + 2)) = lastack;
+        *((short*)(ack)) = htons(4);
+        *((short*)(ack + 2)) = htons(lastack);
         for (int i = 0; i < 4; i++) {
-            cout << "opcode: " << *((short*)(ack)) << ", ack: " << *((short*)(ack + 2)) << endl;
+            cout << "opcode: " << ntohs(*((short*)(ack))) << ", ack: " << ntohs(*((short*)(ack + 2))) << endl;
         }
         cout << endl;
         int status = (int)sendto(sockfd, (const char*)ack, 4, 0, (const struct sockaddr*)&client, len);
@@ -244,10 +245,11 @@ public:
         return true;
     }
     virtual bool recieve(char* in, int nbytes) {
+        retries = 0;
         char* readPtr = in + 2;
-        cout << "WRQ recieve data" << *((short*)readPtr) << endl;
-        if (*((short*)readPtr) == curblock + 1) {
-            curblock = *((short*)readPtr);
+        cout << "WRQ recieve data" << ntohs(*((short*)readPtr)) << endl;
+        if (ntohs(*((short*)readPtr)) == curblock + 1) {
+            curblock = ntohs(*((short*)readPtr));
             readPtr += 2;
             file.write(readPtr, nbytes - 4);
             if (nbytes < MAXLINE) {

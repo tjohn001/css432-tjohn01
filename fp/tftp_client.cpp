@@ -37,7 +37,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
     int len = sizeof(server);
 
     char* ptr = buffer;
-    *((short*)ptr) = opcode;
+    *((short*)ptr) = htons(opcode);
     ptr += 2;
     strcpy(ptr, filename);
     ptr += sizeof(filename);
@@ -61,23 +61,23 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
             if (bytesRead < 2) {
                 cout << "read error";
             }
-            else if (*((short*)buffer) == 5) {
+            else if (ntohs(*((short*)buffer)) == 5) {
                 cout << "error";
                 return -1;
             }
             else if (*((short*)buffer) != 3) {
-                cout << "wrong packet type: " << *((short*)buffer) << endl;
+                cout << "wrong packet type: " << ntohs(*((short*)buffer)) << endl;
             }
             else {
                 char* readPtr = buffer + 2;
-                short curblock = *((short*)readPtr);
+                short curblock = ntohs(*((short*)readPtr));
                 readPtr += 2;
                 file.write(readPtr, bytesRead - 4);
                 data = bytesRead - 4;
                 
                 char ack[4];
-                *((short*)ack) = 4;
-                *((short*)(ack + 2)) = curblock;
+                *((short*)ack) = htons(4);
+                *((short*)(ack + 2)) = htons(curblock);
                 cout << "read " << bytesRead << " send ack " << curblock << endl;
                 sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&server, len);
                 /* resend ack on timeout*/
@@ -97,15 +97,15 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                 cout << "packet error: " << strerror(errno) << endl;
                 continue;
             }
-            else if (*((short*)ack) = 5) {
+            else if (ntohs(*((short*)ack)) == 5) {
                 cout << "recieved error" << endl;
             }
-            else if (*((short*)ack) != 4) {
-                cout << "wrong packet type" << *((short*)ack) << endl;
+            else if (ntohs(*((short*)ack)) != 4) {
+                cout << "wrong packet type" << ntohs(*((short*)ack)) << endl;
                 continue;
             }
             else if (*((short*)(ack + 2)) != 0) {
-                cout << "ack not 0: " << *((short*)(ack + 2)) << endl;
+                cout << "ack not 0: " << ntohs(*((short*)(ack + 2))) << endl;
             }
         }
 
@@ -122,8 +122,8 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         char dataBuf[MAXLINE];
         int toRead, curblock = 1;
         do {
-            *((short*)buffer) = 3;
-            *((short*)(buffer + 2)) = curblock;
+            *((short*)buffer) = htons(3);
+            *((short*)(buffer + 2)) = htons(curblock);
             if (curblock * 512 > size) {
                 toRead = size - ((curblock - 1) * 512);
             }
@@ -145,20 +145,20 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                 int bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&data, (socklen_t*)&dataLen);
                 if (bytesRead >= 4) {
                     cout << "packet recieved" << endl;
-                    if (*((short*)dataBuf) == 5) {
+                    if (ntohs(*((short*)dataBuf)) == 5) {
                         string error(dataBuf + 4);
-                        cout << "Error " << *((short*)(dataBuf + 2)) << ": " << error << endl;
+                        cout << "Error " << ntohs(*((short*)(dataBuf + 2))) << ": " << error << endl;
                         file.close();
                         return -1;
                     }
-                    else if (*((short*)dataBuf) == 4) {
-                        if (*((short*)(dataBuf + 2)) == curblock) {
+                    else if (ntohs(*((short*)dataBuf)) == 4) {
+                        if (ntohs(*((short*)(dataBuf + 2))) == curblock) {
                             cout << "block acked" << endl;
                             blockAcked = true;
                             curblock++;
                             break;
                         }
-                        else if (*((short*)(dataBuf + 2)) != curblock) {
+                        else if (ntohs(*((short*)(dataBuf + 2))) != curblock) {
                             cout << "wrong ack recieved" << endl;
                         }
                     }

@@ -61,10 +61,10 @@ int main(int argc, char* argv[]) {
             cout << "recieved packet length: " << bytesRead << endl;
             //TODO: add check that ptr < bytes read
             char* ptr = buffer;
-            short opcode = *((short*)ptr);
+            short opcode = ntohs(*((short*)ptr));
             if (opcode < 1 || opcode > 5) {
-                *((short*)buffer) = 5;
-                *((short*)(buffer + 2)) = 4;
+                *((short*)buffer) = htons(5);
+                *((short*)(buffer + 2)) = htons(4);
                 const char* error = "Uknown operation\0";
                 cout << error << endl;
                 strcpy(buffer + 4, error);
@@ -77,8 +77,8 @@ int main(int argc, char* argv[]) {
                 string mode(ptr);
 
                 if (mode != "octet") {
-                    *((short*)buffer) = 5;
-                    *((short*)(buffer + 2)) = 4;
+                    *((short*)buffer) = htons(5);
+                    *((short*)(buffer + 2)) = htons(4);
                     const char* error = "This server only supports octet mode\0";
                     cout << error << endl;
                     strcpy(buffer + 4, error);
