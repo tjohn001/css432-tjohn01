@@ -232,7 +232,7 @@ public:
         *((short*)(ack)) = 4;
         *((short*)(ack + 2)) = lastack;
         for (int i = 0; i < 4; i++) {
-            cout << "opcode: " << *((short*)(ack)) << ", ack: " << *((short*)(ack + 2) << endl;
+            cout << "opcode: " << *((short*)(ack)) << ", ack: " << *((short*)(ack + 2)) << endl;
         }
         cout << endl;
         int status = (int)sendto(sockfd, (const char*)ack, 4, 0, (const struct sockaddr*)&client, len);
