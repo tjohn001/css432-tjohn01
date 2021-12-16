@@ -232,9 +232,6 @@ public:
         char ack[4];
         *((short*)(ack)) = htons(4);
         *((short*)(ack + 2)) = htons(lastack);
-        for (int i = 0; i < 4; i++) {
-            cout << "opcode: " << ntohs(*((short*)(ack))) << ", ack: " << ntohs(*((short*)(ack + 2))) << endl;
-        }
         cout << endl;
         int status = (int)sendto(sockfd, (const char*)ack, 4, 0, (const struct sockaddr*)&client, len);
         if (status < 0) {
