@@ -16,7 +16,7 @@
 using namespace std;
 
 #define MAXLINE 516
-#define PORT 51949
+#define PORT 51948
 #define RETRIES 10
 #define TIMEOUT 2
 #define HOST_ADDRESS "10.158.82.39"
