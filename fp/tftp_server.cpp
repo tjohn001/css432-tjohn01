@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
                 cout << "other packet type";
             }
         }
-        for (auto i = readVector.begin(); i != readVector.end(); next(i)) {
+        for (auto i = readVector.begin(); i != readVector.end(); i++) {
             STEP step = i->nextStep();
             switch (step) {
             case CLOSE:
@@ -150,7 +150,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
         }
-        for (auto i = writeVector.begin(); i != writeVector.end(); next(i)) {
+        for (auto i = writeVector.begin(); i != writeVector.end(); i++) {
             STEP step = i->nextStep();
             switch (step) {
             case CLOSE:
@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
         }
-        cout << "completed loop" << endl
+        cout << "completed loop" << endl;
         this_thread::sleep_for(std::chrono::milliseconds(100)); //for server stability
     }
     close(sockfd); //close socket fd
