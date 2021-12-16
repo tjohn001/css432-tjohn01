@@ -137,6 +137,7 @@ int main(int argc, char* argv[]) {
             case CLOSE:
                 cout << "closing transaction" << endl;
                 readVector.erase(i);
+                cout << "seg fault here?" << endl;
                 break;
             case RETRY:
                 cout << "retrying" << endl;
