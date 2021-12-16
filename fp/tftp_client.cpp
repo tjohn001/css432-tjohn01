@@ -67,7 +67,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                 return -1;
             }
             else if (*((short*)buffer) != 3) {
-                cout << "wrong packet type: " << *((short*)buffer);
+                cout << "wrong packet type: " << *((short*)buffer) << endl;
             }
             else {
                 char* readPtr = buffer + 2;

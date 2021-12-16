@@ -164,7 +164,6 @@ int main(int argc, char* argv[]) {
                 break;
             }
         }
-        cout << "completed loop" << endl;
         this_thread::sleep_for(std::chrono::milliseconds(100)); //for server stability
     }
     close(sockfd); //close socket fd

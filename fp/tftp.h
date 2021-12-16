@@ -33,7 +33,7 @@ public:
     sockaddr_in client;
     fstream file;
     int retries = 0, tid, len, sockfd;
-    short curblock = 0, lastack = -1;
+    short curblock, lastack;
     timeval timeSent;
     STEP curStep = START;
 };
@@ -50,6 +50,8 @@ public:
         gettimeofday(&timeSent, NULL);
         len = sizeof(client);
         sockfd = fd;
+        curblock = 0;
+        lastack = 0;
     }
     virtual STEP nextStep() {
         timeval curtime;
@@ -70,12 +72,12 @@ public:
             curStep = CLOSE;
             return curStep;
         }
-        else if (curtime.tv_sec - timeSent.tv_sec >= TIMEOUT) {
-            curStep = RETRY;
-            return curStep;
-        }
         else if (lastack == curblock) {
             curStep = PROGRESS;
+            return curStep;
+        }
+        else if (curtime.tv_sec - timeSent.tv_sec >= TIMEOUT) {
+            curStep = RETRY;
             return curStep;
         }
         else {
@@ -99,16 +101,17 @@ public:
         long end = file.tellg();
         file.seekg(0, ios::beg);
         size = end - file.tellg();
-        curStep = PROGRESS;
         cout << "start finished" << endl;
+        curStep = PROGRESS;
         return true;
     }
     virtual bool send() {
-        cout << "send()" << endl;
+        cout << "RRQ send(): " << curStep << endl;
         if (curStep == PROGRESS) {
             curStep = WAIT;
             retries = 0;
             curblock++;
+            cout << "progress" << endl;
             *((short*)buffer) = 3;
             *((short*)(buffer + 2)) = curblock;
             if (curblock * 512 > size) {
@@ -213,6 +216,8 @@ public:
             return false;
         }
         file.seekg(0, ios::beg);
+        lastack = -1;
+        curblock = 0;
         curStep = PROGRESS;
         return true;
     }
@@ -235,7 +240,7 @@ public:
     }
     virtual bool recieve(char* in, int nbytes) {
         char* readPtr = in + 2;
-        if (*((short*)readPtr) > curblock) {
+        if (*((short*)readPtr) == curblock + 1) {
             curblock = *((short*)readPtr);
             readPtr += 2;
             file.write(readPtr, nbytes - 4);
