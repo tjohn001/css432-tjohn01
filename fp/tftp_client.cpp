@@ -88,7 +88,91 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
     }
     else if (opcode == 2) {
         cout << "WRQ :" << filename << endl;
-        sendFile(filename, server, sockfd);
+        char ack[4];
+        int bytesRead = 0;
+        for (int i = 0; i < RETRIES; i++) {
+            bytesRead = (int)recvfrom(sockfd, ack, 4, MSG_WAITALL, (struct sockaddr*)&recvaddr, (socklen_t*)&recvaddr);
+            if (bytesRead != 4) {
+                cout << "packet error" << endl;
+                continue;
+            }
+            else if (*((short*)ack) = 5) {
+                cout << "recieved error" << endl;
+            }
+            else if (*((short*)ack) != 4) {
+                cout << "wrong packet type" << *((short*)ack) << endl;
+                continue;
+            }
+            else if (*((short*)(ack + 2)) != 0) {
+                cout << "ack not 0: " << *((short*)(ack + 2)) << endl;
+            }
+        }
+
+        ifstream file(filename, ios::ate | ios::binary);
+        long end = file.tellg();
+        file.seekg(0, ios::beg);
+        long size = end - file.tellg();
+        cout << "start: " << file.tellg() << " end: " << end << " size: " << size << endl;
+        struct sockaddr_in data;
+        memset(&data, 0, sizeof(data));
+        int len = sizeof(recvaddr);
+        int dataLen = sizeof(data);
+        char buffer[MAXLINE];
+        char dataBuf[MAXLINE];
+        int toRead, curblock = 1;
+        do {
+            *((short*)buffer) = 3;
+            *((short*)(buffer + 2)) = curblock;
+            if (curblock * 512 > size) {
+                toRead = size - ((curblock - 1) * 512);
+            }
+            else {
+                toRead = 512;
+            }
+            cout << "reading file" << endl;
+            file.read(buffer + 4, toRead);
+            //struct timeval start_time, cur_time; //timer
+            bool blockAcked = false;
+            for (int i = 0; i < RETRIES && !blockAcked; i++) {
+                cout << "sending bytes: " << toRead << "in block" << curblock << endl;
+                int status = sendto(sockfd, (const char*)buffer, 4 + toRead, 0, (const struct sockaddr*)&recvaddr, len);
+                if (status < 0) {
+                    cout << "sending error" << endl;
+                    continue;
+                }
+                //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
+                int bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&data, (socklen_t*)&dataLen);
+                if (bytesRead >= 4) {
+                    cout << "packet recieved" << endl;
+                    if (*((short*)dataBuf) == 5) {
+                        string error(dataBuf + 4);
+                        cout << "Error " << *((short*)(dataBuf + 2)) << ": " << error << endl;
+                        file.close();
+                        return -1;
+                    }
+                    else if (*((short*)dataBuf) == 4) {
+                        if (*((short*)(dataBuf + 2)) == curblock) {
+                            cout << "block acked" << endl;
+                            blockAcked = true;
+                            curblock++;
+                            break;
+                        }
+                        else if (*((short*)(dataBuf + 2)) != curblock) {
+                            cout << "wrong ack recieved" << endl;
+                        }
+                    }
+                }
+                if (!blockAcked) {
+                    cout << "timed out waiting for ack, retrying..." << endl;
+                }
+            }
+            if (!blockAcked) {
+                cout << "retries failed, session ended" << endl;
+                file.close();
+                return -1;
+            }
+        } while (toRead == 512);
+        file.close();
     }
     close(sockfd);
     return 0;
