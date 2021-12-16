@@ -100,6 +100,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
             gettimeofday(&start_time, NULL);
             while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !transAcked) {
                 bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+                cout << "bytes read: " << bytesRead << endl;
                 if (bytesRead < 0) {
                     cout << "recv error: " << strerror(errno) << endl;
                 }
