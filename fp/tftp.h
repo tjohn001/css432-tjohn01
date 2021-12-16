@@ -229,7 +229,7 @@ public:
         }
         cout << "WRQ send: ack " << lastack << endl;
         char ack[4];
-        *((short*)ack) = 4;
+        *((short*)(ack)) = 4;
         *((short*)(ack + 2)) = lastack;
         for (int i = 0; i < 4; i++) {
             cout << (int)ack[i];
