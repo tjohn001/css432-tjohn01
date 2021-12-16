@@ -90,23 +90,31 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         cout << "WRQ :" << filename << endl;
         char ack[MAXLINE];
         int bytesRead = 0;
-        for (int i = 0; i < RETRIES; i++) {
+        int retries = 0;
+        while(retries < RETRIES) {
             sendto(sockfd, buffer, ptr - buffer, MSG_CONFIRM, (const struct sockaddr*)&server, len);
-            bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&server);
+            bytesRead = (int)recvfrom(sockfd, (char*)ack, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
             if (bytesRead < 4) {
                 cout << "packet error: " << strerror(errno) << endl;
                 continue;
             }
-            else if (ntohs(*((short*)ack)) == 5) {
-                cout << "recieved error" << endl;
+            else {
+                if (ntohs(*((short*)ack)) == 5) {
+                    cout << "recieved error" << endl;
+                    return 0;
+                }
+                else if (ntohs(*((short*)ack)) != 4) {
+                    cout << "wrong packet type" << ntohs(*((short*)ack)) << endl;    
+                }
+                else if (*((short*)(ack + 2)) != 0) {
+                    cout << "ack not 0: " << ntohs(*((short*)(ack + 2))) << endl;
+                }
             }
-            else if (ntohs(*((short*)ack)) != 4) {
-                cout << "wrong packet type" << ntohs(*((short*)ack)) << endl;
-                continue;
-            }
-            else if (*((short*)(ack + 2)) != 0) {
-                cout << "ack not 0: " << ntohs(*((short*)(ack + 2))) << endl;
-            }
+            retries++;
+        }
+        if (retries == RETRIES) {
+            cout << "Retry failed" << endl;
+            return 0;
         }
 
         ifstream file(filename, ios::ate | ios::binary);

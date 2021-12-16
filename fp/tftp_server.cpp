@@ -89,12 +89,32 @@ int main(int argc, char* argv[]) {
 
                 cout << "opcode: " << opcode << ", filename: " << filename << ", mode: " << mode << endl; 
                 if (opcode == 1) {
-                    readVector.emplace_back(client, sockfd);
-                    readVector.back().start(filename);
+                    bool tidExists = false;
+                    for (auto i = readVector.begin(); i != readVector.end(); i++) {
+                        if (i->tid = ntohs(client.sin_port)) {
+                            tidExists = true;
+                            cout << "tid already has connection";
+                            break;
+                        }
+                    }
+                    if (!tidExists) {
+                        readVector.emplace_back(client, sockfd);
+                        readVector.back().start(filename);
+                    }
                 }
                 else if (opcode == 2) {
-                    writeVector.emplace_back(client, sockfd);
-                    writeVector.back().start(filename);
+                    bool tidExists = false;
+                    for (auto i = writeVector.begin(); i != writeVector.end(); i++) {
+                        if (i->tid = ntohs(client.sin_port)) {
+                            tidExists = true;
+                            cout << "tid already has connection";
+                            break;
+                        }
+                    }
+                    if (!tidExists) {
+                        writeVector.emplace_back(client, sockfd);
+                        writeVector.back().start(filename);
+                    }
                 }
             }
             else if (opcode == 3) {
@@ -158,12 +178,15 @@ int main(int argc, char* argv[]) {
             STEP step = i->nextStep();
             switch (step) {
             case CLOSE:
+                cout << "closing transaction" << endl;
                 i = writeVector.erase(i);
                 break;
             case RETRY:
+                cout << "retrying" << endl;
                 i->send();
                 break;
             case PROGRESS:
+                cout << "progressing" << endl;
                 i->send();
                 break;
             }
