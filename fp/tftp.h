@@ -33,7 +33,7 @@ public:
     sockaddr_in client;
     fstream file;
     int retries = 0, tid, len, sockfd;
-    short curblock = 0, lastack = 0;
+    short curblock = 0, lastack = -1;
     timeval timeSent;
     STEP curStep = START;
 };
@@ -50,7 +50,6 @@ public:
         gettimeofday(&timeSent, NULL);
         len = sizeof(client);
         sockfd = fd;
-        curblock = 1;
     }
     virtual STEP nextStep() {
         timeval curtime;
