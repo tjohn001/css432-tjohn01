@@ -5,7 +5,7 @@
 #include <thread>
 using namespace std;
 
-ReadRequest* findClientInRRQQueue(vector<ReadRequest> queue, sockaddr_in client) {
+/*ReadRequest* findClientInRRQQueue(vector<ReadRequest> queue, sockaddr_in client) {
     for (int i = 0; i < queue.size(); i++) {
         if (queue.at(i).tid == ntohs(client.sin_port)) {
             return &queue.at(i);
@@ -20,7 +20,7 @@ WriteRequest* findClientInWRQQueue(vector<WriteRequest> queue, sockaddr_in clien
         }
     }
     return nullptr;
-}
+}*/
 
 //main method, server should take 2 args - the port number and the number of iterations
 int main(int argc, char* argv[]) {
@@ -83,30 +83,30 @@ int main(int argc, char* argv[]) {
 
                 cout << "opcode: " << opcode << ", filename: " << filename << ", mode: " << mode << endl; 
                 if (opcode == 1) {
-                    ReadRequest req(client, sockfd);
-                    readVector.push_back(req);
-                    req.start(filename);
+                    readVector.emplace_back(client, sockfd);
+                    readVector.back().start(filename);
                 }
                 else if (opcode == 2) {
-                    WriteRequest writ(client, sockfd);
-                    writeVector.push_back(writ);
-                    writ.start(filename);
+                    writeVector.emplace_back(client, sockfd);
+                    writeVector.back().start(filename);
                 }
             }
             else if (opcode == 3) {
-                WriteRequest* req = findClientInWRQQueue(writeVector, client);
-                if (req != nullptr) {
-                    char in[MAXLINE];
-                    bcopy(buffer, in, MAXLINE);
-                    req->recieve(in, bytesRead);
+                for (auto i = writeVector.begin(); i != writeVector.end(); next(i)) {
+                    if (i->tid == ntohs(client.sin_port)) {
+                        char in[MAXLINE];
+                        bcopy(buffer, in, MAXLINE);
+                        i->recieve(in, bytesRead);
+                    }
                 }
             }
             else if (opcode == 4) {
-                ReadRequest* req = findClientInRRQQueue(readVector, client);
-                if (req != nullptr) {
-                    char in[4];
-                    bcopy(buffer, in, 4);
-                    req->recieve(in);
+                for (auto i = readVector.begin(); i != readVector.end(); next(i)) {
+                    if (i->tid == ntohs(client.sin_port)) {
+                        char in[4];
+                        bcopy(buffer, in, 4);
+                        i->recieve(in);
+                    }
                 }
             }
             else if (opcode == 5) {
@@ -138,6 +138,8 @@ int main(int argc, char* argv[]) {
                 break;
             case PROGRESS:
                 i->send();
+                break;
+            default:
                 break;
             }
         }

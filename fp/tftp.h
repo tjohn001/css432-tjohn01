@@ -15,8 +15,14 @@
 
 using namespace std;
 
-const int MAXLINE = 516, PORT = 51949, RETRIES = 10, TIMEOUT = 2;
-const char* HOST_ADDRESS = "10.158.82.39";
+#define MAXLINE 516
+#define PORT 51949
+#define RETRIES 10
+#define TIMEOUT 2
+#define HOST_ADDRESS "10.158.82.39"
+
+//const int MAXLINE = 516, PORT = 51949, RETRIES = 10, TIMEOUT = 2;
+//const char* HOST_ADDRESS = "10.158.82.39";
 
 int sendFile(string filename, sockaddr_in recvaddr, int sockfd);
 
@@ -26,7 +32,8 @@ class Transaction {
 public:
     sockaddr_in client;
     fstream file;
-    int retries = 0, curblock = 0, lastack = 0, tid, len, sockfd;
+    int retries = 0, tid, len, sockfd;
+    short curblock = 0, lastack = 0;
     timeval timeSent;
     STEP curStep = START;
 };
@@ -34,7 +41,8 @@ public:
 class ReadRequest: public Transaction {
 public:
     char buffer[MAXLINE];
-    int size, curBlockSize;
+    int curBlockSize;
+    long size;
     ReadRequest(sockaddr_in addr, int fd) {
         memset(&buffer, 0, MAXLINE);
         client = addr;
@@ -83,11 +91,13 @@ public:
             strcpy(buffer + 4, error);
             sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
             curStep = CLOSE;
+            return false;
         }
-        int end = file.tellg();
+        long end = file.tellg();
         file.seekg(0, ios::beg);
         size = end - file.tellg();
         curStep = PROGRESS;
+        return true;
     }
     virtual bool send() {
         if (curStep == PROGRESS) {
@@ -111,7 +121,7 @@ public:
         }
         gettimeofday(&timeSent, NULL);
         cout << "sending block " << curblock;
-        int status = sendto(sockfd, (const char*)buffer, 4 + curBlockSize, 0, (const struct sockaddr*)&client, len);
+        int status = (int) sendto(sockfd, (const char*)buffer, 4 + curBlockSize, 0, (const struct sockaddr*)&client, len);
         if (status < 0) {
             cout << "sending error" << endl;
         }
@@ -125,12 +135,20 @@ public:
         }
         else if (*((short*)(in + 2)) != curblock) {
             cout << "wrong ack recieved: " << lastack << endl;
+            return false;
         }
+        return true;
     }
 };
 
 class WriteRequest: public Transaction {
 public:
+    sockaddr_in client;
+    fstream file;
+    int retries = 0, tid, len, sockfd;
+    short curblock = 0, lastack = 0;
+    timeval timeSent;
+    STEP curStep = START;
     WriteRequest(sockaddr_in addr, int fd) {
         client = addr;
         tid = ntohs(client.sin_port);
@@ -175,6 +193,7 @@ public:
             strcpy(buffer + 4, error);
             sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
             curStep = CLOSE;
+            return false;
         }
         else if (file.good()) {
             char buffer[MAXLINE];
@@ -185,9 +204,11 @@ public:
             strcpy(buffer + 4, error);
             sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
             curStep = CLOSE;
+            return false;
         }
         file.seekg(0, ios::beg);
         curStep = PROGRESS;
+        return true;
     }
     virtual bool send() {
         if (curStep == PROGRESS) {
@@ -196,21 +217,27 @@ public:
             curStep = WAIT;
         }
         char ack[4];
-        char* tempPtr = ack;
         *((short*)ack) = 4;
         *((short*)(ack + 2)) = lastack;
-        sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&client, len);
+        int status = (int) sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&client, len);
+        if (status < 0) {
+            cout << "sending error" << endl;
+        }
         gettimeofday(&timeSent, NULL);
         retries++;
+        return true;
     }
     virtual bool recieve(char* in, int nbytes) {
         char* readPtr = in + 2;
-        short curblock = max(*((short*)readPtr),curblock);
-        readPtr += 2;
-        file.write(readPtr, nbytes - 4);
-        if (nbytes < MAXLINE) {
-            curStep = CLOSE;
+        if (*((short*)readPtr) > curblock) {
+            curblock = *((short*)readPtr);
+            readPtr += 2;
+            file.write(readPtr, nbytes - 4);
+            if (nbytes < MAXLINE) {
+                curStep = CLOSE;
+            }
+            return true;
         }
-        return true;
+        return false;
     }
 };
