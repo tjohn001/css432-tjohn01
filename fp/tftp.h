@@ -50,6 +50,7 @@ public:
         gettimeofday(&timeSent, NULL);
         len = sizeof(client);
         sockfd = fd;
+        curblock = 1;
     }
     virtual STEP nextStep() {
         timeval curtime;
@@ -61,12 +62,17 @@ public:
             return START;
         }
         else if (curBlockSize < MAXLINE && lastack == curblock) {
+            cout << "last block transmitted & acked" << endl;
             curStep = CLOSE;
             return curStep;
         }
         else if (retries >= RETRIES) {
+            cout << "too many retries" << endl;
             curStep = CLOSE;
             return curStep;
+        }
+        else if (curStep == PROGRESS) {
+            return PROGRESS;
         }
         else if (curtime.tv_sec - timeSent.tv_sec >= TIMEOUT) {
             curStep = RETRY;
@@ -168,6 +174,9 @@ public:
         }
         else if (curStep == START) {
             return START;
+        }
+        else if (curStep == PROGRESS) {
+            return PROGRESS;
         }
         else if (retries >= RETRIES) {
             curStep = CLOSE;
