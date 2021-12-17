@@ -9,7 +9,7 @@ using namespace std;
 static void handler(int signum) {
     cout << "Handling timeout" << endl;
     alarm(0);
-    signal(SIGALRM, handler);
+    //signal(SIGALRM, handler);
 }
 
 
@@ -67,6 +67,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
             for (int i = 0; i < RETRIES && !recievedData; i++) {
                 alarm(TIMEOUT);
                 int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+                cout << "read bytes " << bytesRead << endl;
                 alarm(0);
                 if (bytesRead == 0) {
                     if (transAcked == false) { //if didn't recieve response to request, send it again
@@ -130,6 +131,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
             sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
             alarm(TIMEOUT);
             bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+            cout << "bytes read " << bytesRead << endl;
             alarm(0);
             if (bytesRead >= 4) {
                 cout << "packet recieved" << endl;

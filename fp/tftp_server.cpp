@@ -24,7 +24,7 @@ WriteRequest* findClientInWRQQueue(vector<WriteRequest> queue, sockaddr_in clien
 
 //main method, server should take 2 args - the port number and the number of iterations
 int main(int argc, char* argv[]) {
-    int port = PORT;
+    //int port = PORT;
     /*if (argc == 3) {
         string flag = argv[1];
         if (flag == "-p") {
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
     // Filling server information
     server.sin_family = AF_INET; // IPv4
     server.sin_addr.s_addr = INADDR_ANY;
-    server.sin_port = htons(port);
+    server.sin_port = htons(PORT);
 
     // Bind the socket with the server address
     if (bind(sockfd, (const struct sockaddr*)&server, sizeof(server)) < 0) {
