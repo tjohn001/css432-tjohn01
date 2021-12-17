@@ -46,12 +46,9 @@ int startTransfer(int port, const char* filename, const short opcode) {
     *((short*)ptr) = htons(opcode);
     ptr += 2;
     strcpy(ptr, filename);
-    cout << strlen(filename) << endl;
     ptr += strlen(filename) + 1;
-    //*ptr = 0; //filename should be null terminated
-    //ptr++;
     strcpy(ptr, "octet\0");
-    ptr += strlen("octet\0");
+    ptr += strlen("octet\0") + 1;
 
     if (opcode == 1) {
         cout << "RRQ " << filename << endl;
@@ -146,9 +143,12 @@ int startTransfer(int port, const char* filename, const short opcode) {
                     cout << "recieved error " << ntohs(*((short*)(ack + 2))) << ": " << string(ack + 4) << endl;
                     return 0;
                 }
-                else if (ntohs(*((short*)(ack + 2)) && ntohs(*((short*)ack)) != 4) == 0) {
-                    cout << "ack 0 recieved" << endl;
-                    transAcked = true;
+                else if (ntohs(*((short*)ack)) == 4) {
+                    retries = 0; //recieved ack, so reset retries;
+                    if (ntohs(*((short*)(ack + 2))) == 0) {
+                        cout << "ack 0 recieved" << endl;
+                            transAcked = true;
+                    }
                 }
             }
             if (!transAcked) {
@@ -183,6 +183,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
                 int status = sendto(sockfd, (const char*)buffer, 4 + toRead, 0, (const struct sockaddr*)&server, len);
                 alarm(TIMEOUT);
                 int bytesRead = 0;
+                flag = true;
                 while (flag && bytesRead <= 0) { //try and recieve data until timeout
                     bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
                 }
