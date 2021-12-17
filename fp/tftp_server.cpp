@@ -6,8 +6,57 @@
 
 using namespace std;
 
+pthread_mutex_t read_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t write_lock = PTHREAD_MUTEX_INITIALIZER;
 
+struct Vectors {
+    vector<ReadRequest>* read;
+    vector<WriteRequest>* write;
+};
 
+void* update_transactions(void* ptr) {
+    Vectors* vecs = (Vectors*)ptr;
+    vector<ReadRequest>* readVector = vecs->read;
+    vector<WriteRequest>* writeVector = vecs->write;
+    while (true) {
+        pthread_mutex_lock(&read_lock);
+        for (auto i = readVector->begin(); i != readVector->end() && !readVector->empty(); i++) {
+            STEP step = i->nextStep();
+            switch (step) {
+            case CLOSE:
+                cout << "Closing transaction " << "[" << i->tid << "]" << endl;
+                i = readVector->erase(i);
+                break;
+            case RETRY:
+                i->send();
+                break;
+            case PROGRESS:
+                i->send();
+                break;
+            default:
+                break;
+            }
+        }
+        pthread_mutex_unlock(&read_lock);
+        pthread_mutex_lock(&write_lock);
+        for (auto i = writeVector->begin(); i != writeVector->end() && !writeVector->empty(); i++) {
+            STEP step = i->nextStep();
+            switch (step) {
+            case CLOSE:
+                cout << "Closing transaction " << "[" << i->tid << "]" << endl;
+                i = writeVector->erase(i);
+                break;
+            case RETRY:
+                i->send();
+                break;
+            case PROGRESS:
+                i->send();
+                break;
+            }
+        }
+        pthread_mutex_unlock(&write_lock);
+    }
+}
 
 //main method, server should take 2 args - the port number and the number of iterations
 int main(int argc, char* argv[]) {
@@ -41,6 +90,14 @@ int main(int argc, char* argv[]) {
 
     vector<ReadRequest> readVector = vector<ReadRequest>();
     vector<WriteRequest> writeVector = vector<WriteRequest>();
+
+    pthread_t thread1;
+
+    struct Vectors vecs;
+    vecs.read = &readVector;
+    vecs.write = &writeVector;
+
+    pthread_create(&thread1, NULL, update_transactions, (void*)&vecs);
 
     while (true) {
         int bytesRead = recvfrom(sockfd, (char*)buffer, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&client, (socklen_t*)&len);
@@ -80,6 +137,7 @@ int main(int argc, char* argv[]) {
 
                 cout << "opcode: " << opcode << ", filename: " << filename << ", mode: " << mode << endl;
                 if (opcode == 1) {
+                    pthread_mutex_lock(&read_lock);
                     bool tidExists = false;
                     for (auto i = readVector.begin(); i != readVector.end(); i++) {
                         if (i->tid == ntohs(client.sin_port)) {
@@ -93,8 +151,10 @@ int main(int argc, char* argv[]) {
                         readVector.emplace_back(client, sockfd);
                         readVector.back().start(filename);
                     }
+                    pthread_mutex_unlock(&read_lock);
                 }
                 else if (opcode == 2) {
+                    pthread_mutex_lock(&write_lock);
                     bool tidExists = false;
                     for (auto i = writeVector.begin(); i != writeVector.end(); i++) {
                         if (i->tid == ntohs(client.sin_port)) {
@@ -108,9 +168,11 @@ int main(int argc, char* argv[]) {
                         writeVector.emplace_back(client, sockfd);
                         writeVector.back().start(filename);
                     }
+                    pthread_mutex_unlock(&write_lock);
                 }
             }
             else if (opcode == 3) {
+                pthread_mutex_lock(&write_lock);
                 for (auto i = writeVector.begin(); i != writeVector.end(); i++) {
                     if (i->tid == ntohs(client.sin_port)) {
                         char in[MAXLINE];
@@ -119,8 +181,10 @@ int main(int argc, char* argv[]) {
                         break;
                     }
                 }
+                pthread_mutex_unlock(&write_lock);
             }
             else if (opcode == 4) {
+                pthread_mutex_lock(&read_lock);
                 for (auto i = readVector.begin(); i != readVector.end(); i++) {
                     if (i->tid == ntohs(client.sin_port)) {
                         char in[4];
@@ -129,8 +193,10 @@ int main(int argc, char* argv[]) {
                         break;
                     }
                 }
+                pthread_mutex_unlock(&read_lock);
             }
             else if (opcode == 5) {
+                pthread_mutex_lock(&read_lock);
                 for (auto i = readVector.begin(); i != readVector.end() && !readVector.empty(); i++) {
                     if (i->tid == ntohs(client.sin_port)) {
                         i->curStep = CLOSE;
@@ -138,6 +204,8 @@ int main(int argc, char* argv[]) {
                         break;
                     }
                 }
+                pthread_mutex_unlock(&read_lock);
+                pthread_mutex_lock(&write_lock);
                 for (auto i = writeVector.begin(); i != writeVector.end() && !writeVector.empty(); i++) {
                     if (i->tid == ntohs(client.sin_port)) {
                         i->curStep = CLOSE;
@@ -145,41 +213,10 @@ int main(int argc, char* argv[]) {
                         break;
                     }
                 }
+                pthread_mutex_unlock(&write_lock);
             }
         }
-        for (auto i = readVector.begin(); i != readVector.end() && !readVector.empty(); i++) {
-            STEP step = i->nextStep();
-            switch (step) {
-            case CLOSE:
-                cout << "Closing transaction " << "[" << i->tid << "]" << endl;
-                i = readVector.erase(i);
-                break;
-            case RETRY:
-                i->send();
-                break;
-            case PROGRESS:
-                i->send();
-                break;
-            default:
-                break;
-            }
-        }
-        for (auto i = writeVector.begin(); i != writeVector.end() && !writeVector.empty(); i++) {
-            STEP step = i->nextStep();
-            switch (step) {
-            case CLOSE:
-                cout << "Closing transaction " << "[" << i->tid << "]" << endl;
-                i = writeVector.erase(i);
-                break;
-            case RETRY:
-                i->send();
-                break;
-            case PROGRESS:
-                i->send();
-                break;
-            }
-        }
-        this_thread::sleep_for(std::chrono::milliseconds(10)); //for server stability
+        //this_thread::sleep_for(std::chrono::milliseconds(10)); //for server stability
     }
     close(sockfd); //close socket fd
     return 0;
