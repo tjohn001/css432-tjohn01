@@ -103,122 +103,109 @@ int startTransfer(int port, const char* filename, const short opcode) {
         gettimeofday(&cur_time, NULL);
         bool transAcked = false;
         while (retries < RETRIES && !transAcked) {
-            sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
-            //gettimeofday(&start_time, NULL);
-            //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !transAcked) {
-            alarm(TIMEOUT);
-            flag = true;
-            while (flag && bytesRead <= 0) {
-                bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
-            }
-            alarm(0);
-            if (bytesRead >= 4) {
-                cout << "packet recieved" << endl;
-                retries = 0;
-                if (ntohs(*((short*)ack)) == 5) {
-                    cout << "recieved error" << endl;
-                    return 0;
-                }
-                else if (ntohs(*((short*)ack)) != 4) {
-                    cout << "wrong packet type" << ntohs(*((short*)ack)) << endl;
-                }
-                else if (ntohs(*((short*)(ack + 2))) != 0) {
-                    cout << "ack not 0: " << ntohs(*((short*)(ack + 2))) << endl;
-                }
-                else if (ntohs(*((short*)(ack + 2))) == 0) {
-                    cout << "ack 0 recieved" << endl;
-                    transAcked = true;
-                }
-            }
-            //gettimeofday(&cur_time, NULL);
-            //}
-            if (!transAcked) {
-                cout << "timed out waiting transaction ack, retrying..." << endl;
-            }
-            retries++;
-        }
-        if (retries == RETRIES || !transAcked) {
-            cout << "Could not start transaction, closing" << endl;
-            return 0;
-        }
-
-        ifstream file(filename, ios::ate | ios::binary);
-        long end = file.tellg();
-        file.seekg(0, ios::beg);
-        long size = end - file.tellg();
-        cout << "start: " << file.tellg() << " end: " << end << " size: " << size << endl;
-        int len = sizeof(server);
-        char dataBuf[MAXLINE];
-        int toRead, curblock = 1;
-        do {
-            cout << "in loop?" << endl;
-            *((short*)buffer) = htons(3);
-            *((short*)(buffer + 2)) = htons(curblock);
-            if (curblock * 512 > size) {
-                toRead = size - ((curblock - 1) * 512);
-            }
-            else {
-                toRead = 512;
-            }
-            cout << "reading file " << toRead << " bytes" << endl;
-            file.read(buffer + 4, toRead);
-            bool blockAcked = false;
-            for (int i = 0; i < RETRIES && !blockAcked; i++) {
-                cout << "sending bytes: " << toRead << "in block" << curblock << endl;
-                int status = sendto(sockfd, (const char*)buffer, 4 + toRead, 0, (const struct sockaddr*)&server, len);
-                if (status < 0) {
-                    cout << "sending error" << endl;
-                    continue;
-                }
-                //gettimeofday(&start_time, NULL);
-                //gettimeofday(&cur_time, NULL);
-                //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
+            cout << "WRQ :" << filename << endl;
+            char ack[MAXLINE];
+            int bytesRead = 0;
+            int retries = 0;
+            bool transAcked = false;
+            while (retries < RETRIES && !transAcked) {
+                cout << "Sending WRQ: " << filename << endl;
+                sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
                 alarm(TIMEOUT);
-                int bytesRead = 0;
                 flag = true;
                 while (bytesRead <= 0 && flag) {
-                    bytesRead = recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
+                    bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
                 }
+                cout << "bytes read " << bytesRead << endl;
                 alarm(0);
                 if (bytesRead >= 4) {
                     cout << "packet recieved" << endl;
-                    if (ntohs(*((short*)dataBuf)) == 5) {
-                        string error(dataBuf + 4);
-                        cout << "Error " << ntohs(*((short*)(dataBuf + 2))) << ": " << error << endl;
-                        file.close();
+                    retries = 0;
+                    if (ntohs(*((short*)ack)) == 5) {
+                        cout << "recieved error" << endl;
                         return 0;
                     }
-                    else if (ntohs(*((short*)dataBuf)) == 4) {
-                        if (ntohs(*((short*)(dataBuf + 2))) == curblock) {
-                            cout << "block acked" << endl;
-                            blockAcked = true;
-                            curblock++;
-                            break;
+                    else if (ntohs(*((short*)(ack + 2)) && ntohs(*((short*)ack)) != 4) == 0) {
+                        cout << "ack 0 recieved" << endl;
+                        transAcked = true;
+                    }
+                }
+                if (!transAcked) {
+                    cout << "Timed out waiting for transaction ack, retrying..." << endl;
+                }
+                retries++;
+            }
+            if (retries == RETRIES || !transAcked) {
+                cout << "Could not start transaction, closing" << endl;
+                return 0;
+            }
+
+            ifstream file(filename, ios::ate | ios::binary);
+            long end = file.tellg();
+            file.seekg(0, ios::beg);
+            long size = end - file.tellg();
+            char dataBuf[MAXLINE];
+            int toRead, curblock = 1;
+            do {
+                *((short*)buffer) = htons(3);
+                *((short*)(buffer + 2)) = htons(curblock);
+                if (curblock * 512 > size) {
+                    toRead = size - ((curblock - 1) * 512);
+                }
+                else {
+                    toRead = 512;
+                }
+                file.read(buffer + 4, toRead);
+                bool blockAcked = false;
+                for (int i = 0; i < RETRIES && !blockAcked; i++) {
+                    cout << "sending bytes: " << toRead << "in block" << curblock << endl;
+                    int status = sendto(sockfd, (const char*)buffer, 4 + toRead, 0, (const struct sockaddr*)&server, len);
+                    alarm(TIMEOUT);
+                    int bytesRead = 0;
+                    while (flag && bytesRead <= 0) {
+                        bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
+                    }
+                    if (bytesRead < 0) {
+                        cout << "recv error: " << strerror(errno) << endl;
+                    }
+                    alarm(0);
+                    if (bytesRead >= 4) {
+                        if (ntohs(*((short*)dataBuf)) == 5) {
+                            string error(dataBuf + 4);
+                            cout << "Error " << ntohs(*((short*)(dataBuf + 2))) << ": " << error << endl;
+                            file.close();
+                            return 0;
                         }
-                        else if (ntohs(*((short*)(dataBuf + 2))) != curblock) {
-                            cout << "wrong ack recieved" << endl;
+                        else if (ntohs(*((short*)dataBuf)) == 4) {
+                            if (ntohs(*((short*)(dataBuf + 2))) == curblock) {
+                                cout << "block acked" << endl;
+                                blockAcked = true;
+                                curblock++;
+                                break;
+                            }
+                            else if (ntohs(*((short*)(dataBuf + 2))) != curblock) {
+                                cout << "wrong ack recieved" << endl;
+                            }
+                        }
+                        else if (ntohs(*((short*)ack)) != 4) {
+                            cout << "wrong packet type" << ntohs(*((short*)ack)) << endl;
                         }
                     }
-                    else if (ntohs(*((short*)ack)) != 4) {
-                        cout << "wrong packet type" << ntohs(*((short*)ack)) << endl;
+                    if (!blockAcked) {
+                        cout << "timed out waiting for ack, retrying..." << endl;
                     }
                 }
                 if (!blockAcked) {
-                    cout << "timed out waiting for ack, retrying..." << endl;
+                    cout << "retries failed, session ended" << endl;
+                    file.close();
+                    return 0;
                 }
-                //gettimeofday(&cur_time, NULL);
-                //}
-            }
-            if (!blockAcked) {
-                cout << "retries failed, session ended" << endl;
-                file.close();
-                return 0;
-            }
-        } while (toRead == 512);
-        file.close();
+            } while (toRead == 512);
+            file.close();
+        }
+        close(sockfd);
+        return 0;
     }
-    close(sockfd);
-    return 0;
 }
 
 //main method, server should take 6 arguments
