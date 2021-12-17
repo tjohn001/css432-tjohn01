@@ -1,8 +1,15 @@
 
 //#pragma once
 #include "tftp.h"
+#include <signal.h>
 
 using namespace std;
+
+//handler from alarm - doesn't need to do anything
+static void handler(int signum) {
+    signal(SIGALRM, handler);
+}
+
 
 //method for handling creating connection to server
 //takes in port #, server address, number of iterations to run, number of buffers, size of buffers, and the type of sending method to use
@@ -11,7 +18,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
     int sockfd;
     char buffer[MAXLINE];
     struct sockaddr_in server;
-
+    signal(SIGALRM, handler);
     // Creating socket file descriptor
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
@@ -63,7 +70,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
                 int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
                 alarm(0);
                 if (bytesRead == 0) {
-                    if (transAcked == false) {
+                    if (transAcked == false) { //if didn't recieve response to request, send it again
                         cout << "Retrying RRQ" << endl;
                         ptr = buffer;
                         *((short*)ptr) = htons(opcode);
@@ -77,7 +84,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
                         *ptr = 0;
                         sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
                     }
-                    else {
+                    else { //if didn't recieve response, send ACK again
                         cout << "Timed out: resending ACK " << curblock << endl;
                         char ack[4];
                         *((short*)ack) = htons(4);
