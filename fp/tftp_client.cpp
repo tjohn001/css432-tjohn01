@@ -40,9 +40,6 @@ int startTransfer(int port, const char* filename, const short opcode) {
     timeSent.tv_sec = TIMEOUT; /* seconds */
     timeSent.tv_usec = 0;
 
-    //if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&timeSent, sizeof(timeSent) < 0))
-        //cout << "Cannot Set SO_RCVTIMEO for socket: " << strerror(errno) << endl;
-
     int len = sizeof(server);
 
     char* ptr = buffer;
@@ -255,7 +252,7 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
     }
-    return startTransfer(PORT, "test.txt", 2);
+    return startTransfer(PORT, "test.txt", 1);
     //return startTransfer(port, filename, opcode);
 }
 
