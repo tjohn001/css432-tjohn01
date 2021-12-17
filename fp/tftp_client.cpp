@@ -91,42 +91,44 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         char ack[MAXLINE];
         int bytesRead = 0;
         int retries = 0;
-        struct timeval start_time, cur_time; //timer
-        gettimeofday(&start_time, NULL);
-        gettimeofday(&cur_time, NULL);
+        //struct timeval start_time, cur_time; //timer
+        //gettimeofday(&start_time, NULL);
+        //gettimeofday(&cur_time, NULL);
         bool transAcked = false;
         while(retries < RETRIES && !transAcked) {
             sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
-            gettimeofday(&start_time, NULL);
-            while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !transAcked) {
-                bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
-                if (bytesRead >= 4) {
-                    cout << "packet recieved" << endl;
-                    retries = 0;
-                    if (ntohs(*((short*)ack)) == 5) {
-                        cout << "recieved error" << endl;
-                        return 0;
-                    }
-                    else if (ntohs(*((short*)ack)) != 4) {
-                        cout << "wrong packet type" << ntohs(*((short*)ack)) << endl;
-                    }
-                    else if (ntohs(*((short*)(ack + 2))) != 0) {
-                        cout << "ack not 0: " << ntohs(*((short*)(ack + 2))) << endl;
-                    }
-                    else if (ntohs(*((short*)(ack + 2))) == 0) {
-                        cout << "ack 0 recieved" << endl;
-                        transAcked = true;
-                    }
+            //gettimeofday(&start_time, NULL);
+            //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !transAcked) {
+            alarm(2);
+            bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+            alarm(0);
+            if (bytesRead >= 4) {
+                cout << "packet recieved" << endl;
+                retries = 0;
+                if (ntohs(*((short*)ack)) == 5) {
+                    cout << "recieved error" << endl;
+                    return 0;
                 }
-                gettimeofday(&cur_time, NULL);
+                else if (ntohs(*((short*)ack)) != 4) {
+                    cout << "wrong packet type" << ntohs(*((short*)ack)) << endl;
+                }
+                else if (ntohs(*((short*)(ack + 2))) != 0) {
+                    cout << "ack not 0: " << ntohs(*((short*)(ack + 2))) << endl;
+                }
+                else if (ntohs(*((short*)(ack + 2))) == 0) {
+                    cout << "ack 0 recieved" << endl;
+                    transAcked = true;
+                }
             }
+            //gettimeofday(&cur_time, NULL);
+            //}
             if (!transAcked) {
-                cout << "timed out waiting for ack, retrying..." << endl;
+                cout << "timed out waiting transaction ack, retrying..." << endl;
             }
             retries++;
         }
         if (retries == RETRIES || !transAcked) {
-            cout << "Retry failed, ending connection" << endl;
+            cout << "Could not start transaction, closing" << endl;
             return 0;
         }
 
@@ -151,7 +153,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
             else {
                 toRead = 512;
             }
-            cout << "reading file" << endl;
+            cout << "reading file " << toRead << " bytes" << endl;
             file.read(buffer + 4, toRead); 
             bool blockAcked = false;
             for (int i = 0; i < RETRIES && !blockAcked; i++) {
@@ -161,35 +163,37 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                     cout << "sending error" << endl;
                     continue;
                 }
-                gettimeofday(&start_time, NULL);
-                gettimeofday(&cur_time, NULL);
-                while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
-                    gettimeofday(&cur_time, NULL);
-                    int bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&data, (socklen_t*)&dataLen);
-                    if (bytesRead >= 4) {
-                        cout << "packet recieved" << endl;
-                        if (ntohs(*((short*)dataBuf)) == 5) {
-                            string error(dataBuf + 4);
-                            cout << "Error " << ntohs(*((short*)(dataBuf + 2))) << ": " << error << endl;
-                            file.close();
-                            return 0;
-                        }
-                        else if (ntohs(*((short*)dataBuf)) == 4) {
-                            if (ntohs(*((short*)(dataBuf + 2))) == curblock) {
-                                cout << "block acked" << endl;
-                                blockAcked = true;
-                                curblock++;
-                                break;
-                            }
-                            else if (ntohs(*((short*)(dataBuf + 2))) != curblock) {
-                                cout << "wrong ack recieved" << endl;
-                            }
-                        }
+                //gettimeofday(&start_time, NULL);
+                //gettimeofday(&cur_time, NULL);
+                //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
+                alarm(2);
+                int bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&data, (socklen_t*)&dataLen);
+                alarm(0);
+                if (bytesRead >= 4) {
+                    cout << "packet recieved" << endl;
+                    if (ntohs(*((short*)dataBuf)) == 5) {
+                        string error(dataBuf + 4);
+                        cout << "Error " << ntohs(*((short*)(dataBuf + 2))) << ": " << error << endl;
+                        file.close();
+                        return 0;
                     }
-                    if (!blockAcked) {
-                        cout << "timed out waiting for ack, retrying..." << endl;
+                    else if (ntohs(*((short*)dataBuf)) == 4) {
+                        if (ntohs(*((short*)(dataBuf + 2))) == curblock) {
+                            cout << "block acked" << endl;
+                            blockAcked = true;
+                            curblock++;
+                            break;
+                        }
+                        else if (ntohs(*((short*)(dataBuf + 2))) != curblock) {
+                            cout << "wrong ack recieved" << endl;
+                        }
                     }
                 }
+                if (!blockAcked) {
+                    cout << "timed out waiting for ack, retrying..." << endl;
+                }
+                //gettimeofday(&cur_time, NULL);
+                //}
             }
             if (!blockAcked) {
                 cout << "retries failed, session ended" << endl;
