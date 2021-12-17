@@ -1,18 +1,14 @@
-//#pragma once
-#include "tftp.h"
-//#include<bits/stdc++.h>
+
 #include <chrono>
 #include <thread>
+#include "tftp.h"
 
 using namespace std;
 
+
+
 pthread_mutex_t read_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t write_lock = PTHREAD_MUTEX_INITIALIZER;
-
-struct Vectors {
-    vector<ReadRequest>* read;
-    vector<WriteRequest>* write;
-};
 
 void* update_transactions(void* ptr) {
     Vectors* vecs = (Vectors*)ptr;

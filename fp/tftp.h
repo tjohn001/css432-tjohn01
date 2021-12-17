@@ -21,236 +21,47 @@ using namespace std;
 #define TIMEOUT 2
 #define HOST_ADDRESS "10.158.82.39"
 
-//const int MAXLINE = 516, PORT = 51949, RETRIES = 10, TIMEOUT = 2;
-//const char* HOST_ADDRESS = "10.158.82.39";
+//struct used for passing vectors to thread
+struct Vectors {
+    vector<ReadRequest>* read;
+    vector<WriteRequest>* write;
+};
 
-int sendFile(string filename, sockaddr_in recvaddr, int sockfd);
+enum STEP { CLOSE, RETRY, WAIT, PROGRESS, START }; //phases of operations performed by Transactions
 
-enum STEP { CLOSE, RETRY, WAIT, PROGRESS, START };
-
+//base class for read/write transactions
 class Transaction {
 public:
-    sockaddr_in client;
-    fstream file;
-    int retries = 0, tid, len, sockfd;
-    short curblock, lastack;
-    timeval timeSent;
-    STEP curStep = START;
+    sockaddr_in client; //client
+    fstream file; //file to operate on
+    int retries = 0, tid, len, sockfd; //current count of retries, client tid, size of client, and socket fd
+    short curblock, lastack; //current data block and last ACK recieved
+    timeval timeSent; //time that last packet was sent
+    STEP curStep = START; //current operation being performed
+    virtual STEP nextStep(timeval curtime) = 0; //calculate what next operation to perform is
+    virtual bool start(string filename) = 0; //start transaction, MUST be called before performing any other operations
+    virtual bool send() = 0; //send packet
+    virtual bool recieve(char* in) = 0; //recieve packet
 };
 
 class ReadRequest : public Transaction {
 public:
-    char buffer[MAXLINE];
-    int curBlockSize = 512;
-    long size;
-    ReadRequest(sockaddr_in addr, int fd) {
-        memset(&buffer, 0, MAXLINE);
-        client = addr;
-        tid = ntohs(client.sin_port);
-        gettimeofday(&timeSent, NULL);
-        len = sizeof(client);
-        sockfd = fd;
-        curblock = 0;
-        lastack = 0;
-    }
-    virtual STEP nextStep() {
-        timeval curtime;
-        gettimeofday(&curtime, NULL);
-        if (curStep == CLOSE) {
-            return CLOSE;
-        }
-        else if (curStep == START) {
-            return START;
-        }
-        else if (retries >= RETRIES) {
-            cout << "Excessive retries, read failed " << "[" << tid << "]" << endl;
-            curStep = CLOSE;
-            return curStep;
-        }
-        else if (curBlockSize < 512 && lastack == curblock) { //512 or maxline??
-            cout << "Read finished " << "[" << tid << "]" << endl;
-            curStep = CLOSE;
-            return curStep;
-        }
-        else if (lastack == curblock) {
-            curStep = PROGRESS;
-            return curStep;
-        }
-        else if (curtime.tv_sec - timeSent.tv_sec >= TIMEOUT) {
-            curStep = RETRY;
-            return curStep;
-        }
-        else {
-            curStep = WAIT;
-            return curStep;
-        }
-    }
-    virtual bool start(string filename) {
-        file = fstream(filename, fstream::in | fstream::ate | fstream::binary);
-        if (file.is_open() == false || !file.good()) {
-            *((short*)buffer) = htons(5);
-            *((short*)(buffer + 2)) = htons(1);
-            const char* error = "Could not open file\0";
-            cout << error << endl;
-            strcpy(buffer + 4, error);
-            sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
-            curStep = CLOSE;
-            return false;
-        }
-        long end = file.tellg();
-        file.seekg(0, ios::beg);
-        size = end - file.tellg();
-        cout << "Starting read transaction: " << filename << ", " << tid << endl;
-        curStep = PROGRESS;
-        return true;
-    }
-    virtual bool send() {
-        if (curStep == PROGRESS) {
-            curStep = WAIT;
-            retries = 0;
-            curblock++;
-            *((short*)buffer) = htons(3);
-            *((short*)(buffer + 2)) = htons(curblock);
-            if (curblock * 512 > size) {
-                curBlockSize = size - ((curblock - 1) * 512);
-            }
-            else {
-                curBlockSize = 512;
-            }
-            file.read(buffer + 4, curBlockSize);
-            cout << "Sending block " << curblock << " of data " << "[" << tid << "]" << endl;
-        }
-        else {
-            curStep = WAIT;
-            retries++;
-            cout << "Timed out: resending block " << curblock << " of data " << "[" << tid << "]" << endl;
-        }
-        int status = (int)sendto(sockfd, (const char*)buffer, 4 + curBlockSize, 0, (const struct sockaddr*)&client, len);
-        if (status < 0) {
-            cout << "sending error" << endl;
-        }
-        gettimeofday(&timeSent, NULL);
-        return true;
-    }
-    //recieves ack: must be 4 bytes
-    virtual bool recieve(char* in) {
-        retries = 0;
-        cout << "recieving ack " << ntohs(*((short*)(in + 2))) << "[" << tid << "]" << endl;
-        if (ntohs(*((short*)(in + 2))) == curblock) {
-            lastack = ntohs(*((short*)(in + 2)));
-            cout << curblock << " block acked" << endl;
-        }
-        else if (ntohs(*((short*)(in + 2))) != curblock) {
-            cout << "wrong ack recieved: " << lastack << endl;
-            return false;
-        }
-        return true;
-    }
+    char buffer[MAXLINE]; //buffer to read file into
+    int curBlockSize = 512; //size of current block being sent
+    long size; //total size of file
+    ReadRequest(sockaddr_in addr, int fd); //constructor
+    STEP nextStep(timeval curtime); //calculate next operation
+    bool start(string filename); //load file and initialize variables
+    bool send(); //send data packet
+    bool recieve(char* in, int nbytes); //recieves 4 byte ACK
 };
 
 class WriteRequest : public Transaction {
 public:
-    sockaddr_in client;
-    fstream file;
-    int retries = 0, tid, len, sockfd;
-    short curblock = 0, lastack = 0;
-    int lastPacketSize = MAXLINE;
-    timeval timeSent;
-    STEP curStep = START;
-    WriteRequest(sockaddr_in addr, int fd) {
-        client = addr;
-        tid = ntohs(client.sin_port);
-        gettimeofday(&timeSent, NULL);
-        len = sizeof(client);
-        sockfd = fd;
-    }
-    virtual STEP nextStep() {
-        timeval curtime;
-        gettimeofday(&curtime, NULL);
-        if (curStep == CLOSE) {
-            return CLOSE;
-        }
-        else if (curStep == START) {
-            return START;
-        }
-        else if (retries >= RETRIES) {
-            curStep = CLOSE;
-            return curStep;
-        }
-        else if (lastack == curblock && lastPacketSize < MAXLINE) {
-            curStep = CLOSE;
-            return curStep;
-        }
-        else if (lastack < curblock) {
-            curStep = PROGRESS;
-            return PROGRESS;
-        }
-        else if (curtime.tv_sec - timeSent.tv_sec >= TIMEOUT) {
-            curStep = RETRY;
-            return curStep;
-        }
-        else {
-            curStep = WAIT;
-            return curStep;
-        }
-    }
-    virtual bool start(string filename) {
-        file = fstream(filename, fstream::out | fstream::binary | fstream::trunc);
-        if (file.is_open() == false) {
-            char buffer[MAXLINE];
-            *((short*)buffer) = htons(5);
-            *((short*)(buffer + 2)) = htons(1);
-            const char* error = "Could not open file\0";
-            cout << "RRQ: could not open file " << "[" << tid << "]" << endl;
-            strcpy(buffer + 4, error);
-            sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
-            curStep = CLOSE;
-            return false;
-        }
-        file.seekg(0, ios::beg);
-        cout << "Starting write transaction: " << filename << "[" << tid << "]" << endl;
-        lastack = -1;
-        curblock = 0;
-        curStep = PROGRESS;
-        return true;
-    }
-    virtual bool send() {
-        if (curStep == PROGRESS) {
-            curStep = WAIT;
-            lastack = curblock;
-            retries = 0;
-            cout << "ACK block " << lastack << " [" << tid << "]" << endl;
-        }
-        else {
-            curStep = WAIT;
-            cout << "Timed out, resending ACK " << lastack << " [" << tid << "]" << endl;
-        }
-        char ack[4];
-        *((short*)(ack)) = htons(4);
-        *((short*)(ack + 2)) = htons(lastack);
-        int status = (int)sendto(sockfd, (const char*)ack, 4, 0, (const struct sockaddr*)&client, len);
-        if (status < 0) {
-            cout << "sending error" << endl;
-        }
-        gettimeofday(&timeSent, NULL);
-        retries++;
-        return true;
-    }
-    virtual bool recieve(char* in, int nbytes) {
-        retries = 0;
-        char* readPtr = in + 2;
-        cout << "Recieved block " << ntohs(*((short*)readPtr)) << " of data " << "[" << tid << "]" << endl;
-        if (ntohs(*((short*)readPtr)) == curblock + 1) {
-            curblock = ntohs(*((short*)readPtr));
-            lastPacketSize = nbytes;
-            readPtr += 2;
-            file.write(readPtr, nbytes - 4);
-            return true;
-        }
-        //after recieving out of order data, need to resend ack
-        else {
-            send();
-        }
-        return false;
-    }
+    int lastPacketSize = MAXLINE; //size of last packet recieved
+    WriteRequest(sockaddr_in addr, int fd); //constructor
+    STEP nextStep(timeval curtime); //calculate next operation
+    bool start(string filename); //open file and initialize variables
+    bool send(); //send ACK
+    bool recieve(char* in, int nbytes); //recieves DATA packet
 };

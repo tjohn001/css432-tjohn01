@@ -1,7 +1,24 @@
 
 //#pragma once
-#include "tftp.h"
+#include <iostream>
+#include <fstream>
+#include <cstring>
+#include <string>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/uio.h>
+#include <netinet/in.h>   // htonl, htons, inet_ntoa 
+#include <arpa/inet.h>    // inet_ntoa 
+#include <netdb.h>        // gethostbyname 
+#include <unistd.h>       // read, write, close 
+#include <sys/time.h>
 #include <signal.h>
+
+#define MAXLINE 516
+#define PORT 51948
+#define RETRIES 10
+#define TIMEOUT 2
+#define HOST_ADDRESS "10.158.82.39"
 
 using namespace std;
 
@@ -106,6 +123,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
                         file.write(buffer + 4, bytesRead - 4);
                         data = bytesRead - 4;
                     }
+                    cout << "Sending ACK " << curblock << endl;
                     char ack[4];
                     *((short*)ack) = htons(4);
                     *((short*)(ack + 2)) = htons(curblock);
