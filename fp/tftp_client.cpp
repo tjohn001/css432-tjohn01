@@ -7,11 +7,11 @@ using namespace std;
 
 bool flag = true;
 
-/*static void handler(int signum) {
+static void handler(int signum) {
     cout << "Handling timeout" << endl;
     flag = false;
     signal(SIGALRM, handler);
-}*/
+}
 
 //method for handling creating connection to server
 //takes in port #, server address, number of iterations to run, number of buffers, size of buffers, and the type of sending method to use
@@ -20,7 +20,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
     int sockfd;
     char buffer[MAXLINE];
     struct sockaddr_in server;
-    //signal(SIGALRM, handler);
+    signal(SIGALRM, handler);
     // Creating socket file descriptor
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
@@ -106,12 +106,12 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
             sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
             //gettimeofday(&start_time, NULL);
             //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !transAcked) {
-            //alarm(TIMEOUT);
+            alarm(TIMEOUT);
             flag = true;
             //while (flag && bytesRead <= 0) {
-                bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
+                bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, 0, (struct sockaddr*)&server, (socklen_t*)&len);
             //}
-            //alarm(0);
+            alarm(0);
             if (bytesRead >= 4) {
                 cout << "packet recieved" << endl;
                 retries = 0;
@@ -173,15 +173,15 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                 //gettimeofday(&start_time, NULL);
                 //gettimeofday(&cur_time, NULL);
                 //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
-                //alarm(TIMEOUT);
+                alarm(TIMEOUT);
                 int bytesRead = 0;
                 flag = true;
                 //while (bytesRead <= 0 && flag) {
-                    (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
+                    (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, 0, (struct sockaddr*)&server, (socklen_t*)&len);
                 if (bytesRead < 0) {
                     cout << "recv error: " << strerror(errno) << endl;
                 }
-                //alarm(0);
+                alarm(0);
                 if (bytesRead >= 4) {
                     cout << "packet recieved" << endl;
                     if (ntohs(*((short*)dataBuf)) == 5) {
