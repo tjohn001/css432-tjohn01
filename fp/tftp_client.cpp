@@ -1,17 +1,17 @@
 
 //#pragma once
 #include "tftp.h"
-#include <signal.h>
+//#include <signal.h>
 
 using namespace std;
 
 bool flag = true;
 
-static void handler(int signum) {
+/*static void handler(int signum) {
     cout << "Handling timeout" << endl;
     flag = false;
     signal(SIGALRM, handler);
-}
+}*/
 
 //method for handling creating connection to server
 //takes in port #, server address, number of iterations to run, number of buffers, size of buffers, and the type of sending method to use
@@ -20,7 +20,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
     int sockfd;
     char buffer[MAXLINE];
     struct sockaddr_in server;
-    signal(SIGALRM, handler);
+    //signal(SIGALRM, handler);
     // Creating socket file descriptor
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
@@ -151,6 +151,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         char dataBuf[MAXLINE];
         int toRead, curblock = 1;
         do {
+            cout << "in loop?" << endl;
             *((short*)buffer) = htons(3);
             *((short*)(buffer + 2)) = htons(curblock);
             if (curblock * 512 > size) {
@@ -217,9 +218,10 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
             }
         } while (toRead == 512);
         file.close();
+        exit(0);
     }
     close(sockfd);
-    return 0;
+    exit(0);
 }
 
 //main method, server should take 6 arguments
