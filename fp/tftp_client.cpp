@@ -55,7 +55,10 @@ int startTransfer(int port, const char* filename, const short opcode) {
 
     if (opcode == 1) {
         cout << "RRQ " << filename << endl;
-        sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
+        int status sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
+        if (status < 0) {
+            cout << "send error: " << strerror << endl;
+        }
         ofstream file(filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
         int data = 0;
@@ -65,8 +68,12 @@ int startTransfer(int port, const char* filename, const short opcode) {
         do {
             recievedData = false;
             for (int i = 0; i < RETRIES && !recievedData; i++) {
+                cout << "trying to recieve data" << endl;
                 //alarm(TIMEOUT);
-                int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+                int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
+                if (bytesRead < 0) {
+                    cout << "recv error: " << strerror(errno);
+                }
                 cout << "read bytes " << bytesRead << endl;
                 //alarm(0);
                 if (bytesRead == 0) {
