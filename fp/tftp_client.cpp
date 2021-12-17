@@ -53,7 +53,6 @@ int startTransfer(int port, const char* filename, const short opcode) {
         ofstream file (filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
         int data = 0;
-        short curblock;
         bool transAcked = false;
         bool recievedData = false;
         short curblock = 1;
