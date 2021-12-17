@@ -109,7 +109,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
             //alarm(TIMEOUT);
             flag = true;
             //while (flag && bytesRead <= 0) {
-                bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, 0, (struct sockaddr*)&server, (socklen_t*)&len);
+                bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
             //}
             //alarm(0);
             if (bytesRead >= 4) {
@@ -177,7 +177,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                 int bytesRead = 0;
                 flag = true;
                 //while (bytesRead <= 0 && flag) {
-                    (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, 0, (struct sockaddr*)&server, (socklen_t*)&len);
+                    (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
                 if (bytesRead < 0) {
                     cout << "recv error: " << strerror(errno) << endl;
                 }
