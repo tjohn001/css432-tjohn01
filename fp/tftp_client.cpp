@@ -68,11 +68,10 @@ int startTransfer(int port, const char* filename, const short opcode) {
                 while (bytesRead <= 0 && flag) {
                     bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
                 }
-                cout << "read bytes " << bytesRead << endl;
                 alarm(0);
-                if (bytesRead == 0) {
+                if (bytesRead <= 0) {
                     if (transAcked == false) { //if didn't recieve response to initial request, send it again
-                        cout << "Retrying RRQ" << endl;
+                        cout << "Timed out: resending RRQ" << endl;
                         ptr = buffer;
                         *((short*)ptr) = htons(opcode);
                         ptr += 2;
@@ -223,6 +222,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
         } while (toRead == 512);
         file.close();
     }
+    cout << "done" << endl;
     close(sockfd);
     return 0;
 }

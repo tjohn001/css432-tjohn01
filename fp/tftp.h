@@ -100,7 +100,7 @@ public:
         long end = file.tellg();
         file.seekg(0, ios::beg);
         size = end - file.tellg();
-        cout << "Starting read transaction: " << filename << ", " << tid;
+        cout << "Starting read transaction: " << filename << ", " << tid << endl;
         curStep = PROGRESS;
         return true;
     }
