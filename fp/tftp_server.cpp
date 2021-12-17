@@ -24,8 +24,8 @@ WriteRequest* findClientInWRQQueue(vector<WriteRequest> queue, sockaddr_in clien
 
 //main method, server should take 2 args - the port number and the number of iterations
 int main(int argc, char* argv[]) {
-    int port = PORT; 
-    if (argc == 3) {
+    int port = PORT;
+    /*if (argc == 3) {
         string flag = argv[1];
         if (flag == "-p") {
             port = stoi(argv[2]);
@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
                 exit(1);
             }
         }
-    }
+    }*/
     //setup server socket
     int sockfd;
     char buffer[MAXLINE];

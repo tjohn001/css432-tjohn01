@@ -33,7 +33,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
 
     // Filling server information
     server.sin_family = AF_INET;
-    server.sin_port = htonl(port);
+    server.sin_port = htonl(PORT);
     server.sin_addr.s_addr = inet_addr(HOST_ADDRESS);
 
     struct timeval timeSent;
@@ -129,6 +129,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
         int retries = 0;
         bool transAcked = false;
         while(retries < RETRIES && !transAcked) {
+            cout << "Sending WRQ: " << filename << endl;
             sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
             alarm(TIMEOUT);
             bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
@@ -254,8 +255,8 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
     }
-
-    return startTransfer(port, filename, 2);
+    return startTransfer(PORT, "test.txt", 2);
+    //return startTransfer(port, filename, opcode);
 }
 
 
