@@ -24,17 +24,6 @@ WriteRequest* findClientInWRQQueue(vector<WriteRequest> queue, sockaddr_in clien
 
 //main method, server should take 2 args - the port number and the number of iterations
 int main(int argc, char* argv[]) {
-    //int port = PORT;
-    /*if (argc == 3) {
-        string flag = argv[1];
-        if (flag == "-p") {
-            port = stoi(argv[2]);
-            if (port < 0) {
-                cout << "bad port" << endl;
-                exit(1);
-            }
-        }
-    }*/
     //setup server socket
     int sockfd;
     char buffer[MAXLINE];
@@ -67,10 +56,7 @@ int main(int argc, char* argv[]) {
     vector<WriteRequest> writeVector = vector<WriteRequest>();
 
     while (true) {
-        int bytesRead = recvfrom(sockfd, (char*)buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&client, (socklen_t*)&len);
-        if (bytesRead < 0) {
-            cout << "recv error: " << strerror(errno) << endl;
-        }
+        int bytesRead = recvfrom(sockfd, (char*)buffer, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&client, (socklen_t*)&len);
         if (bytesRead > 0) {
             cout << "recieved packet length: " << bytesRead << endl;
             //TODO: add check that ptr < bytes read
@@ -92,7 +78,7 @@ int main(int argc, char* argv[]) {
                 ptr += filename.length() + 1;
                 string mode(ptr);
 
-                if (filename.find('/') != -1 || filename.find('\\') != -1) {
+                if (mode != "octet") {
                     *((short*)buffer) = htons(5);
                     *((short*)(buffer + 2)) = htons(4);
                     const char* error = "This server only supports octet mode\0";
@@ -100,15 +86,9 @@ int main(int argc, char* argv[]) {
                     strcpy(buffer + 4, error);
                     sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
                 }
-                else if (mode != "octet") {
-                    *((short*)buffer) = htons(5);
-                    *((short*)(buffer + 2)) = htons(4);
-                    const char* error = "This server only supports octet mode\0";
-                    cout << error << endl;
-                    strcpy(buffer + 4, error);
-                    sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
-                }
-                else if (opcode == 1) {
+
+                cout << "opcode: " << opcode << ", filename: " << filename << ", mode: " << mode << endl;
+                if (opcode == 1) {
                     bool tidExists = false;
                     for (auto i = readVector.begin(); i != readVector.end(); i++) {
                         if (i->tid = ntohs(client.sin_port)) {
