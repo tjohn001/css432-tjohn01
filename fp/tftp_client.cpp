@@ -235,7 +235,7 @@ int main(int argc, char* argv[]) {
     }*/
 
     return startTransfer("54948", "test.txt", 2);
-
+    exit(0);
     //return startTransfer(argv[1], argv[2], stoi(argv[3]), stoi(argv[4]), stoi(argv[5]), stoi(argv[6]));
 }
 
