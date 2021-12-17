@@ -65,6 +65,12 @@ int main(int argc, char* argv[]) {
                 ptr += filename.length() + 1;
                 string mode(ptr);
 
+                cout << filename << endl;
+                for (char* i = ptr - (filename.length() + 1); i < ptr; i++) {
+                    cout << *i;
+                }
+                cout << endl;
+
                 if (mode != "octet") {
                     *((short*)buffer) = htons(5);
                     *((short*)(buffer + 2)) = htons(4);
@@ -142,23 +148,18 @@ int main(int argc, char* argv[]) {
                     }
                 }
             }
-            else {
-                cout << "other packet type";
-            }
         }
         for (auto i = readVector.begin(); i != readVector.end() && !readVector.empty(); i++) {
             STEP step = i->nextStep();
             switch (step) {
             case CLOSE:
-                cout << "closing transaction" << endl;
+                cout << "Closing transaction " << "[" << i->tid << "]" << endl;
                 i = readVector.erase(i);
                 break;
             case RETRY:
-                cout << "retrying" << endl;
                 i->send();
                 break;
             case PROGRESS:
-                cout << "progressing" << endl;
                 i->send();
                 break;
             default:
@@ -169,15 +170,13 @@ int main(int argc, char* argv[]) {
             STEP step = i->nextStep();
             switch (step) {
             case CLOSE:
-                cout << "closing transaction" << endl;
+                cout << "Closing transaction " << "[" << i->tid << "]" << endl;
                 i = writeVector.erase(i);
                 break;
             case RETRY:
-                cout << "retrying" << endl;
                 i->send();
                 break;
             case PROGRESS:
-                cout << "progressing" << endl;
                 i->send();
                 break;
             }

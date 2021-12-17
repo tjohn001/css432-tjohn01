@@ -228,7 +228,6 @@ public:
         char ack[4];
         *((short*)(ack)) = htons(4);
         *((short*)(ack + 2)) = htons(lastack);
-        cout << endl;
         int status = (int)sendto(sockfd, (const char*)ack, 4, 0, (const struct sockaddr*)&client, len);
         if (status < 0) {
             cout << "sending error" << endl;

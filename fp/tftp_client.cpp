@@ -46,10 +46,14 @@ int startTransfer(int port, const char* filename, const short opcode) {
     *((short*)ptr) = htons(opcode);
     ptr += 2;
     strcpy(ptr, filename);
+    cout << sizeof(filename);
+    for (int i = 0; i < sizeof(filename); i++) {
+        cout << ptr[i];
+    }
+    cout << endl;
     ptr += sizeof(filename);
-    *ptr = 0;
-    cout << string(ptr - sizeof(filename));
-    ptr++;
+    //*ptr = 0; //filename should be null terminated
+    //ptr++;
     strcpy(ptr, "octet");
     ptr += sizeof("octet");
     *ptr = 0;
