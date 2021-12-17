@@ -99,7 +99,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
             sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
             //gettimeofday(&start_time, NULL);
             //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !transAcked) {
-            alarm(2);
+            alarm(TIMEOUT);
             bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
             alarm(0);
             if (bytesRead >= 4) {
@@ -166,8 +166,8 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                 //gettimeofday(&start_time, NULL);
                 //gettimeofday(&cur_time, NULL);
                 //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
-                alarm(2);
-                int bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&data, (socklen_t*)&dataLen);
+                alarm(TIMEOUT);
+                int bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_WAITALL, (struct sockaddr*)&data, (socklen_t*)&dataLen);
                 alarm(0);
                 if (bytesRead >= 4) {
                     cout << "packet recieved" << endl;

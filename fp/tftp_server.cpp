@@ -195,7 +195,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
         }
-        this_thread::sleep_for(std::chrono::milliseconds(100)); //for server stability
+        this_thread::sleep_for(std::chrono::milliseconds(10)); //for server stability
     }
     close(sockfd); //close socket fd
     return 0;
