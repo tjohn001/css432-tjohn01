@@ -218,40 +218,15 @@ int main(int argc, char* argv[]) {
     const char* filename;
     int port = PORT;
 
-    /*if (argc == 3 || argc == 5) {
-        for (int i = 1; i < argc-1; i++) {
-            if (argv[i] == "-w") {
-                opcode = 2;
-                filename = argv[++i];
-                if (access(filename, F_OK) == -1) {
-                    cout << "file does not exist" << endl;
-                }
-            }
-            else if (argv[i] == "-r") {
-                opcode = 1;
-                filename = argv[++i]; 
-            }
-            else if (argv[i] == "-p") {
-                port = stoi(argv[++i]);
-                if (port < 0) {
-                    cout << "bad port" << endl;
-                    exit(1);
-                }
-            }
-        }
-    }
-    else {
-        cout << "wrong number of arguments" << endl;
-        exit(1);
-    }*/
     if (argc != 3 && argc != 5) {
         cout << "wrong number of arguments" << endl;
         exit(1);
     }
-    else if (argv[1] == "-r") {
+    string flag = argv[1];
+    if (flag == "-r") {
         opcode = 1;
     }
-    else if (argv[1] == "-w") {
+    else if (flag == "-w") {
         opcode = 2;
     }
     else {
@@ -259,7 +234,10 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
     filename = argv[2];
-
+    if (access(filename, F_OK) == -1) {
+        cout << "file does not exist" << endl;
+        exit(1);
+    }
     if (argc == 5) {
         port = stoi(argv[4]);
         if (port < 0) {
@@ -269,8 +247,6 @@ int main(int argc, char* argv[]) {
     }
 
     return startTransfer(port, filename, 2);
-
-    //return startTransfer(argv[1], argv[2], stoi(argv[3]), stoi(argv[4]), stoi(argv[5]), stoi(argv[6]));
 }
 
 
