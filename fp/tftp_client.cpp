@@ -5,9 +5,12 @@
 
 using namespace std;
 
+bool flag = true;
+
 static void handler(int signum) {
     cout << "Handling timeout" << endl;
-    //signal(SIGALRM, handler);
+    flag = false;
+    signal(SIGALRM, handler);
 }
 
 //method for handling creating connection to server
@@ -37,8 +40,6 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
     timeSent.tv_sec = TIMEOUT; /* seconds */
     timeSent.tv_usec = 0;
 
-    //if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&timeSent, sizeof(timeSent) < 0))
-        //cout << "Cannot Set SO_RCVTIMEO for socket: " << strerror(errno) << endl;
 
     int len = sizeof(server);
 
@@ -106,7 +107,10 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
             //gettimeofday(&start_time, NULL);
             //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !transAcked) {
             alarm(TIMEOUT);
-            bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+            flag = true;
+            //while (flag && bytesRead <= 0) {
+                bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, 0, (struct sockaddr*)&server, (socklen_t*)&len);
+            //}
             alarm(0);
             if (bytesRead >= 4) {
                 cout << "packet recieved" << endl;
@@ -169,7 +173,10 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                 //gettimeofday(&cur_time, NULL);
                 //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
                 alarm(TIMEOUT);
-                int bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+                int bytesRead = 0;
+                flag = true;
+                //while (bytesRead <= 0 && flag) {
+                    (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, 0, (struct sockaddr*)&server, (socklen_t*)&len);
                 if (bytesRead < 0) {
                     cout << "recv error: " << strerror(errno) << endl;
                 }
