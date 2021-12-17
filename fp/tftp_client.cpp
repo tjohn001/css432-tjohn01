@@ -1,7 +1,7 @@
 
 //#pragma once
 #include "tftp.h"
-//#include <signal.h>
+#include <signal.h>
 
 using namespace std;
 
