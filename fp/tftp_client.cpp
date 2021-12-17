@@ -177,10 +177,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
                 int bytesRead = 0;
                 flag = true;
                 while (bytesRead <= 0 && flag) {
-                    recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
-                }
-                if (bytesRead < 0) {
-                    cout << "recv error: " << strerror(errno) << endl;
+                    bytesRead = recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
                 }
                 alarm(0);
                 if (bytesRead >= 4) {
