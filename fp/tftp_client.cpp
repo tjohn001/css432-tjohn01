@@ -47,16 +47,11 @@ int startTransfer(int port, const char* filename, const short opcode) {
     ptr += 2;
     strcpy(ptr, filename);
     cout << strlen(filename) << endl;
-    for (int i = 0; i < sizeof(filename); i++) {
-        cout << ptr[i];
-    }
-    cout << endl;
-    ptr += strlen(filename);
+    ptr += strlen(filename) + 1;
     //*ptr = 0; //filename should be null terminated
     //ptr++;
-    strcpy(ptr, "octet");
-    ptr += sizeof("octet");
-    *ptr = 0;
+    strcpy(ptr, "octet\0");
+    ptr += strlen("octet\0");
 
     if (opcode == 1) {
         cout << "RRQ " << filename << endl;
