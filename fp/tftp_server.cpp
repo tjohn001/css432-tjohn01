@@ -3,24 +3,11 @@
 //#include<bits/stdc++.h>
 #include <chrono>
 #include <thread>
+
 using namespace std;
 
-/*ReadRequest* findClientInRRQQueue(vector<ReadRequest> queue, sockaddr_in client) {
-    for (int i = 0; i < queue.size(); i++) {
-        if (queue.at(i).tid == ntohs(client.sin_port)) {
-            return &queue.at(i);
-        }
-    }
-    return nullptr;
-}
-WriteRequest* findClientInWRQQueue(vector<WriteRequest> queue, sockaddr_in client) {
-    for (int i = 0; i < queue.size(); i++) {
-        if (queue.at(i).tid == ntohs(client.sin_port)) {
-            return &queue.at(i);
-        }
-    }
-    return nullptr;
-}*/
+
+
 
 //main method, server should take 2 args - the port number and the number of iterations
 int main(int argc, char* argv[]) {

@@ -48,6 +48,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
     strcpy(ptr, filename);
     ptr += sizeof(filename);
     *ptr = 0;
+    cout << string(ptr - sizeof(filename));
     ptr++;
     strcpy(ptr, "octet");
     ptr += sizeof("octet");
@@ -74,7 +75,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
                 cout << "read bytes " << bytesRead << endl;
                 alarm(0);
                 if (bytesRead == 0) {
-                    if (transAcked == false) { //if didn't recieve response to request, send it again
+                    if (transAcked == false) { //if didn't recieve response to initial request, send it again
                         cout << "Retrying RRQ" << endl;
                         ptr = buffer;
                         *((short*)ptr) = htons(opcode);
@@ -96,11 +97,12 @@ int startTransfer(int port, const char* filename, const short opcode) {
                         sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&server, len);
                     }
                 }
-                else if (ntohs(*((short*)buffer)) == 5) {
+                else if (ntohs(*((short*)buffer)) == 5) { //print and exit any errors
                     cout << "error " << ntohs(*((short*)(buffer + 2))) << ": " << string(buffer + 4) << endl;
                     exit(1);
                 }
                 else if (ntohs(*((short*)buffer)) == 3) {
+                    cout << "Recieved data " << ntohs(*((short*)(buffer + 2))) << endl;
                     transAcked = true;
                     //if recieved new block update curblock and write data, otherwise retransmit last ack
                     if (ntohs(*((short*)(buffer + 2))) > curblock) {
