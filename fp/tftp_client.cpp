@@ -55,7 +55,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
 
     if (opcode == 1) {
         cout << "RRQ " << filename << endl;
-        int status sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
+        int status = sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
         if (status < 0) {
             cout << "send error: " << strerror << endl;
         }
