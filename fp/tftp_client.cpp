@@ -218,7 +218,7 @@ int main(int argc, char* argv[]) {
     const char* filename;
     int port = PORT;
 
-    if (argc == 3 || argc == 5) {
+    /*if (argc == 3 || argc == 5) {
         for (int i = 1; i < argc-1; i++) {
             if (argv[i] == "-w") {
                 opcode = 2;
@@ -243,11 +243,31 @@ int main(int argc, char* argv[]) {
     else {
         cout << "wrong number of arguments" << endl;
         exit(1);
-    }
-    if (opcode != 1 && opcode != 2) {
-        cout << "bad argument" << endl;
+    }*/
+    if (argc != 3 && argc != 5) {
+        cout << "wrong number of arguments" << endl;
         exit(1);
     }
+    else if (argv[1] == "-r") {
+        opcode = 1;
+    }
+    else if (argv[1] == "-w") {
+        opcode = 2;
+    }
+    else {
+        cout << "first flag must be -r or -w" << endl;
+        exit(1);
+    }
+    filename = argv[2];
+
+    if (argc == 5) {
+        port = stoi(argv[4]);
+        if (port < 0) {
+            cout << "bad port" << endl;
+            exit(1);
+        }
+    }
+
     return startTransfer(port, filename, 2);
 
     //return startTransfer(argv[1], argv[2], stoi(argv[3]), stoi(argv[4]), stoi(argv[5]), stoi(argv[6]));
