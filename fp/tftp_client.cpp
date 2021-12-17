@@ -250,10 +250,6 @@ int main(int argc, char* argv[]) {
     }
     else if (flag == "-w") {
         opcode = 2;
-        if (access(filename, F_OK) == -1) {
-            cout << "file does not exist" << endl;
-            exit(1);
-        }
     }
     else {
         cout << "first flag must be -r or -w" << endl;
