@@ -237,9 +237,11 @@ int main(int argc, char* argv[]) {
     string flag = argv[1];
     if (flag == "-r") {
         opcode = 1;
+        filename = argv[2];
     }
     else if (flag == "-w") {
         opcode = 2;
+        filename = argv[2];
         if (access(filename, F_OK) == -1) {
             cout << "file does not exist" << endl;
             exit(1);
@@ -249,7 +251,7 @@ int main(int argc, char* argv[]) {
         cout << "first flag must be -r or -w" << endl;
         exit(1);
     }
-    filename = argv[2];
+   
 
     if (argc == 5) {
         port = stoi(argv[4]);
