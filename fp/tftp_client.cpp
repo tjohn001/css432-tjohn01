@@ -98,20 +98,20 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         char ack[MAXLINE];
         int bytesRead = 0;
         int retries = 0;
-        //struct timeval start_time, cur_time; //timer
-        //gettimeofday(&start_time, NULL);
-        //gettimeofday(&cur_time, NULL);
+        struct timeval start_time, cur_time; //timer
+        gettimeofday(&start_time, NULL);
+        gettimeofday(&cur_time, NULL);
         bool transAcked = false;
         while (retries < RETRIES && !transAcked) {
             sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
             //gettimeofday(&start_time, NULL);
             //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !transAcked) {
-            alarm(TIMEOUT);
+            //alarm(TIMEOUT);
             flag = true;
             //while (flag && bytesRead <= 0) {
                 bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, 0, (struct sockaddr*)&server, (socklen_t*)&len);
             //}
-            alarm(0);
+            //alarm(0);
             if (bytesRead >= 4) {
                 cout << "packet recieved" << endl;
                 retries = 0;
@@ -172,7 +172,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                 //gettimeofday(&start_time, NULL);
                 //gettimeofday(&cur_time, NULL);
                 //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
-                alarm(TIMEOUT);
+                //alarm(TIMEOUT);
                 int bytesRead = 0;
                 flag = true;
                 //while (bytesRead <= 0 && flag) {
@@ -180,7 +180,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                 if (bytesRead < 0) {
                     cout << "recv error: " << strerror(errno) << endl;
                 }
-                alarm(0);
+                //alarm(0);
                 if (bytesRead >= 4) {
                     cout << "packet recieved" << endl;
                     if (ntohs(*((short*)dataBuf)) == 5) {
