@@ -52,35 +52,63 @@ int startTransfer(int port, const char* filename, const short opcode) {
         cout << "RRQ " << filename << endl;
         ofstream file (filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
-        int data = 512;
+        int data = 0;
         short curblock;
+        bool transAcked = false;
+        bool recievedData = false;
+        short curblock = 1;
         do {
-            cout << "wait for packet" << endl;
-            int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
-            cout << "recieved bytes: " << bytesRead << endl;
-            if (bytesRead < 2) {
-                cout << "read error";
+            recievedData = false;
+            for (int i = 0; i < RETRIES && !recievedData; i++) {
+                alarm(TIMEOUT);
+                int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+                alarm(0);
+                if (bytesRead == 0) {
+                    if (transAcked == false) {
+                        cout << "Retrying RRQ" << endl;
+                        ptr = buffer;
+                        *((short*)ptr) = htons(opcode);
+                        ptr += 2;
+                        strcpy(ptr, filename);
+                        ptr += sizeof(filename);
+                        *ptr = 0;
+                        ptr++;
+                        strcpy(ptr, "octet");
+                        ptr += sizeof("octet");
+                        *ptr = 0;
+                        sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
+                    }
+                    else {
+                        cout << "Timed out: resending ACK " << curblock << endl;
+                        char ack[4];
+                        *((short*)ack) = htons(4);
+                        *((short*)(ack + 2)) = htons(curblock);
+                        sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&server, len);
+                    }
+                }
+                else if (ntohs(*((short*)buffer)) == 5) {
+                    cout << "error " << ntohs(*((short*)(buffer + 2))) << ": " << string(buffer + 4) << endl;
+                    exit(1);
+                }
+                else if (ntohs(*((short*)buffer)) == 3) {
+                    transAcked = true;
+                    //if recieved new block update curblock and write data, otherwise retransmit last ack
+                    if (ntohs(*((short*)(buffer + 2))) > curblock) { 
+                        curblock = ntohs(*((short*)(buffer + 2)));
+                        recievedData = true;
+                        file.write(buffer + 4, bytesRead - 4);
+                        data = bytesRead - 4;
+                    }
+                    char ack[4];
+                    *((short*)ack) = htons(4);
+                    *((short*)(ack + 2)) = htons(curblock);
+                    sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&server, len);
+                }
             }
-            else if (ntohs(*((short*)buffer)) == 5) {
-                cout << "error";
-                return -1;
-            }
-            else if (ntohs(*((short*)buffer)) != 3) {
-                cout << "wrong packet type: " << ntohs(*((short*)buffer)) << endl;
-            }
-            else {
-                char* readPtr = buffer + 2;
-                short curblock = ntohs(*((short*)readPtr));
-                readPtr += 2;
-                file.write(readPtr, bytesRead - 4);
-                data = bytesRead - 4;
-                
-                char ack[4];
-                *((short*)ack) = htons(4);
-                *((short*)(ack + 2)) = htons(curblock);
-                cout << "read " << bytesRead << " send ack " << curblock << endl;
-                sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&server, len);
-                /* resend ack on timeout*/
+            if (recievedData == false) { //retry failed, exit
+                cout << "retries failed, session ended" << endl;
+                file.close();
+                exit(0);
             }
         } while (data == 512);
         cout << "done" << endl;
@@ -91,14 +119,9 @@ int startTransfer(int port, const char* filename, const short opcode) {
         char ack[MAXLINE];
         int bytesRead = 0;
         int retries = 0;
-        //struct timeval start_time, cur_time; //timer
-        //gettimeofday(&start_time, NULL);
-        //gettimeofday(&cur_time, NULL);
         bool transAcked = false;
         while(retries < RETRIES && !transAcked) {
             sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
-            //gettimeofday(&start_time, NULL);
-            //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !transAcked) {
             alarm(TIMEOUT);
             bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
             alarm(0);
@@ -109,21 +132,13 @@ int startTransfer(int port, const char* filename, const short opcode) {
                     cout << "recieved error" << endl;
                     return 0;
                 }
-                else if (ntohs(*((short*)ack)) != 4) {
-                    cout << "wrong packet type" << ntohs(*((short*)ack)) << endl;
-                }
-                else if (ntohs(*((short*)(ack + 2))) != 0) {
-                    cout << "ack not 0: " << ntohs(*((short*)(ack + 2))) << endl;
-                }
-                else if (ntohs(*((short*)(ack + 2))) == 0) {
+                else if (ntohs(*((short*)(ack + 2)) && ntohs(*((short*)ack)) != 4) == 0) {
                     cout << "ack 0 recieved" << endl;
                     transAcked = true;
                 }
             }
-            //gettimeofday(&cur_time, NULL);
-            //}
             if (!transAcked) {
-                cout << "timed out waiting transaction ack, retrying..." << endl;
+                cout << "Timed out waiting for transaction ack, retrying..." << endl;
             }
             retries++;
         }
@@ -136,8 +151,6 @@ int startTransfer(int port, const char* filename, const short opcode) {
         long end = file.tellg();
         file.seekg(0, ios::beg);
         long size = end - file.tellg();
-        cout << "start: " << file.tellg() << " end: " << end << " size: " << size << endl;
-        int len = sizeof(server);
         char dataBuf[MAXLINE];
         int toRead, curblock = 1;
         do {
@@ -149,7 +162,6 @@ int startTransfer(int port, const char* filename, const short opcode) {
             else {
                 toRead = 512;
             }
-            cout << "reading file " << toRead << " bytes" << endl;
             file.read(buffer + 4, toRead); 
             bool blockAcked = false;
             for (int i = 0; i < RETRIES && !blockAcked; i++) {
@@ -162,7 +174,6 @@ int startTransfer(int port, const char* filename, const short opcode) {
                 }
                 alarm(0);
                 if (bytesRead >= 4) {
-                    cout << "packet recieved" << endl;
                     if (ntohs(*((short*)dataBuf)) == 5) {
                         string error(dataBuf + 4);
                         cout << "Error " << ntohs(*((short*)(dataBuf + 2))) << ": " << error << endl;
