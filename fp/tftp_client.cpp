@@ -8,7 +8,6 @@ using namespace std;
 bool flag = true;
 
 static void handler(int signum) {
-    cout << "Handling timeout" << endl;
     flag = false;
     signal(SIGALRM, handler);
 }
@@ -55,39 +54,71 @@ int startTransfer(int port, const char* filename, const short opcode) {
     *ptr = 0;
 
     if (opcode == 1) {
-        sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
         cout << "RRQ " << filename << endl;
+        sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
         ofstream file(filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
-        int data = 512;
-        short curblock;
+        int data = 0;
+        bool transAcked = false;
+        bool recievedData = false;
+        short curblock = 1;
         do {
-            cout << "wait for packet" << endl;
-            int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
-            cout << "recieved bytes: " << bytesRead << endl;
-            if (bytesRead < 2) {
-                cout << "read error";
+            recievedData = false;
+            for (int i = 0; i < RETRIES && !recievedData; i++) {
+                alarm(TIMEOUT);
+                int bytesRead = 0;
+                flag = true;
+                while (bytesRead <= 0 && flag) {
+                    bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
+                }
+                cout << "read bytes " << bytesRead << endl;
+                alarm(0);
+                if (bytesRead == 0) {
+                    if (transAcked == false) { //if didn't recieve response to request, send it again
+                        cout << "Retrying RRQ" << endl;
+                        ptr = buffer;
+                        *((short*)ptr) = htons(opcode);
+                        ptr += 2;
+                        strcpy(ptr, filename);
+                        ptr += sizeof(filename);
+                        *ptr = 0;
+                        ptr++;
+                        strcpy(ptr, "octet");
+                        ptr += sizeof("octet");
+                        *ptr = 0;
+                        sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
+                    }
+                    else { //if didn't recieve response, send ACK again
+                        cout << "Timed out: resending ACK " << curblock << endl;
+                        char ack[4];
+                        *((short*)ack) = htons(4);
+                        *((short*)(ack + 2)) = htons(curblock);
+                        sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&server, len);
+                    }
+                }
+                else if (ntohs(*((short*)buffer)) == 5) {
+                    cout << "error " << ntohs(*((short*)(buffer + 2))) << ": " << string(buffer + 4) << endl;
+                    exit(1);
+                }
+                else if (ntohs(*((short*)buffer)) == 3) {
+                    transAcked = true;
+                    //if recieved new block update curblock and write data, otherwise retransmit last ack
+                    if (ntohs(*((short*)(buffer + 2))) > curblock) {
+                        curblock = ntohs(*((short*)(buffer + 2)));
+                        recievedData = true;
+                        file.write(buffer + 4, bytesRead - 4);
+                        data = bytesRead - 4;
+                    }
+                    char ack[4];
+                    *((short*)ack) = htons(4);
+                    *((short*)(ack + 2)) = htons(curblock);
+                    sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&server, len);
+                }
             }
-            else if (ntohs(*((short*)buffer)) == 5) {
-                cout << "error";
-                return -1;
-            }
-            else if (ntohs(*((short*)buffer)) != 3) {
-                cout << "wrong packet type: " << ntohs(*((short*)buffer)) << endl;
-            }
-            else {
-                char* readPtr = buffer + 2;
-                short curblock = ntohs(*((short*)readPtr));
-                readPtr += 2;
-                file.write(readPtr, bytesRead - 4);
-                data = bytesRead - 4;
-
-                char ack[4];
-                *((short*)ack) = htons(4);
-                *((short*)(ack + 2)) = htons(curblock);
-                cout << "read " << bytesRead << " send ack " << curblock << endl;
-                sendto(sockfd, ack, 4, 0, (const struct sockaddr*)&server, len);
-                /* resend ack on timeout*/
+            if (recievedData == false) { //retry failed, exit
+                cout << "retries failed, session ended" << endl;
+                file.close();
+                exit(0);
             }
         } while (data == 512);
         cout << "done" << endl;
@@ -100,20 +131,18 @@ int startTransfer(int port, const char* filename, const short opcode) {
         int retries = 0;
         bool transAcked = false;
         while (retries < RETRIES && !transAcked) {
-            cout << "Sending WRQ: " << filename << endl;
             sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
             alarm(TIMEOUT);
             flag = true;
             while (bytesRead <= 0 && flag) {
                 bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
             }
-            cout << "bytes read " << bytesRead << endl;
             alarm(0);
             if (bytesRead >= 4) {
                 cout << "packet recieved" << endl;
                 retries = 0;
                 if (ntohs(*((short*)ack)) == 5) {
-                    cout << "recieved error" << endl;
+                    cout << "recieved error " << ntohs(*((short*)(ack + 2))) << ": " << string(ack + 4) << endl;
                     return 0;
                 }
                 else if (ntohs(*((short*)(ack + 2)) && ntohs(*((short*)ack)) != 4) == 0) {
@@ -153,11 +182,8 @@ int startTransfer(int port, const char* filename, const short opcode) {
                 int status = sendto(sockfd, (const char*)buffer, 4 + toRead, 0, (const struct sockaddr*)&server, len);
                 alarm(TIMEOUT);
                 int bytesRead = 0;
-                while (flag && bytesRead <= 0) {
+                while (flag && bytesRead <= 0) { //try and recieve data until timeout
                     bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
-                }
-                if (bytesRead < 0) {
-                    cout << "recv error: " << strerror(errno) << endl;
                 }
                 alarm(0);
                 if (bytesRead >= 4) {
@@ -168,14 +194,15 @@ int startTransfer(int port, const char* filename, const short opcode) {
                         return 0;
                     }
                     else if (ntohs(*((short*)dataBuf)) == 4) {
+                        cout << "Recieved ACK " << ntohs(*((short*)(dataBuf + 2))) << endl;
                         if (ntohs(*((short*)(dataBuf + 2))) == curblock) {
-                            cout << "block acked" << endl;
                             blockAcked = true;
                             curblock++;
                             break;
                         }
+                        //if recieved out of order ack, transmission is possible so don't time out
                         else if (ntohs(*((short*)(dataBuf + 2))) != curblock) {
-                            cout << "wrong ack recieved" << endl;
+                            i = 0;
                         }
                     }
                     else if (ntohs(*((short*)ack)) != 4) {

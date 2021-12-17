@@ -154,6 +154,7 @@ public:
     fstream file;
     int retries = 0, tid, len, sockfd;
     short curblock = 0, lastack = 0;
+    int blockSize = 512;
     timeval timeSent;
     STEP curStep = START;
     WriteRequest(sockaddr_in addr, int fd) {
@@ -173,6 +174,10 @@ public:
             return START;
         }
         else if (retries >= RETRIES) {
+            curStep = CLOSE;
+            return curStep;
+        }
+        else if (lastack == curblock && blockSize < 512) {
             curStep = CLOSE;
             return curStep;
         }
@@ -240,9 +245,6 @@ public:
             curblock = ntohs(*((short*)readPtr));
             readPtr += 2;
             file.write(readPtr, nbytes - 4);
-            if (nbytes < MAXLINE) {
-                curStep = CLOSE;
-            }
             return true;
         }
         //after recieving out of order data, need to resend ack
