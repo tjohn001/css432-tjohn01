@@ -63,12 +63,12 @@ public:
             return START;
         }
         else if (retries >= RETRIES) {
-            cout << "too many retries" << endl;
+            cout << "Excessive retries, read failed " << "[" << tid << "]" << endl;
             curStep = CLOSE;
             return curStep;
         }
         else if (curBlockSize < 512 && lastack == curblock) { //512 or maxline??
-            cout << "last block transmitted & acked" << endl;
+            cout << "Read finished " << "[" << tid << "]" << endl;
             curStep = CLOSE;
             return curStep;
         }
@@ -86,7 +86,6 @@ public:
         }
     }
     virtual bool start(string filename) {
-        cout << "running start" << endl;
         file = fstream(filename, fstream::in | fstream::ate | fstream::binary);
         if (file.is_open() == false || !file.good()) {
             *((short*)buffer) = htons(5);
@@ -101,17 +100,15 @@ public:
         long end = file.tellg();
         file.seekg(0, ios::beg);
         size = end - file.tellg();
-        cout << "start finished" << endl;
+        cout << "Starting read transaction: " << filename << ", " << tid;
         curStep = PROGRESS;
         return true;
     }
     virtual bool send() {
-        cout << "RRQ send(): " << curStep << endl;
         if (curStep == PROGRESS) {
             curStep = WAIT;
             retries = 0;
             curblock++;
-            cout << "progress" << endl;
             *((short*)buffer) = htons(3);
             *((short*)(buffer + 2)) = htons(curblock);
             if (curblock * 512 > size) {
@@ -120,25 +117,25 @@ public:
             else {
                 curBlockSize = 512;
             }
-            cout << "reading file" << endl;
             file.read(buffer + 4, curBlockSize);
+            cout << "Sending block " << curblock << " of data " << "[" << tid << "]" << endl;
         }
         else {
             curStep = WAIT;
             retries++;
+            cout << "Timed out: resending block " << curblock << " of data " << "[" << tid << "]" << endl;
         }
-        gettimeofday(&timeSent, NULL);
-        cout << "sending block " << curblock << endl;
         int status = (int)sendto(sockfd, (const char*)buffer, 4 + curBlockSize, 0, (const struct sockaddr*)&client, len);
         if (status < 0) {
             cout << "sending error" << endl;
         }
+        gettimeofday(&timeSent, NULL);
         return true;
     }
     //recieves ack: must be 4 bytes
     virtual bool recieve(char* in) {
         retries = 0;
-        cout << "recieving packet" << endl;
+        cout << "recieving ack " << ntohs(*((short*)(in + 2))) << "[" << tid << "]" << endl;
         if (ntohs(*((short*)(in + 2))) == curblock) {
             lastack = ntohs(*((short*)(in + 2)));
             cout << curblock << " block acked" << endl;
@@ -199,24 +196,14 @@ public:
             *((short*)buffer) = htons(5);
             *((short*)(buffer + 2)) = htons(1);
             const char* error = "Could not open file\0";
-            cout << error << endl;
+            cout << "RRQ: could not open file " << "[" << tid << "]" << endl;
             strcpy(buffer + 4, error);
             sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
             curStep = CLOSE;
             return false;
         }
-        /*else if (file.good()) {
-            char buffer[MAXLINE];
-            *((short*)buffer) = 5;
-            *((short*)(buffer + 2)) = 6;
-            const char* error = "File already exists\0";
-            cout << error << endl;
-            strcpy(buffer + 4, error);
-            sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
-            curStep = CLOSE;
-            return false;
-        }*/
         file.seekg(0, ios::beg);
+        cout << "Starting write transaction: " << filename << "[" << tid << "]" << endl;
         lastack = -1;
         curblock = 0;
         curStep = PROGRESS;
@@ -224,11 +211,15 @@ public:
     }
     virtual bool send() {
         if (curStep == PROGRESS) {
+            curStep = WAIT;
             lastack = curblock;
             retries = 0;
-            curStep = WAIT;
+            cout << "ACK block " << lastack << " [" << tid << "]" << endl;
         }
-        cout << "WRQ send: ack " << lastack << endl;
+        else {
+            curStep = WAIT;
+            cout << "Timed out, resending ACK " << lastack << " [" << tid << "]" << endl;
+        }
         char ack[4];
         *((short*)(ack)) = htons(4);
         *((short*)(ack + 2)) = htons(lastack);
@@ -244,7 +235,7 @@ public:
     virtual bool recieve(char* in, int nbytes) {
         retries = 0;
         char* readPtr = in + 2;
-        cout << "WRQ recieve data" << ntohs(*((short*)readPtr)) << endl;
+        cout << "Recieved block " << ntohs(*((short*)readPtr)) << " of data " << "[" << tid << "]" << endl;
         if (ntohs(*((short*)readPtr)) == curblock + 1) {
             curblock = ntohs(*((short*)readPtr));
             readPtr += 2;
@@ -253,6 +244,10 @@ public:
                 curStep = CLOSE;
             }
             return true;
+        }
+        //after recieving out of order data, need to resend ack
+        else {
+            send();
         }
         return false;
     }
