@@ -154,7 +154,7 @@ public:
     fstream file;
     int retries = 0, tid, len, sockfd;
     short curblock = 0, lastack = 0;
-    int blockSize = 512;
+    int lastPacketSize = MAXLINE;
     timeval timeSent;
     STEP curStep = START;
     WriteRequest(sockaddr_in addr, int fd) {
@@ -177,7 +177,7 @@ public:
             curStep = CLOSE;
             return curStep;
         }
-        else if (lastack == curblock && blockSize < 512) {
+        else if (lastack == curblock && lastPacketSize < MAXLINE) {
             curStep = CLOSE;
             return curStep;
         }
@@ -243,6 +243,7 @@ public:
         cout << "Recieved block " << ntohs(*((short*)readPtr)) << " of data " << "[" << tid << "]" << endl;
         if (ntohs(*((short*)readPtr)) == curblock + 1) {
             curblock = ntohs(*((short*)readPtr));
+            lastPacketSize = nbytes;
             readPtr += 2;
             file.write(readPtr, nbytes - 4);
             return true;
