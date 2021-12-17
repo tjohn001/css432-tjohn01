@@ -178,7 +178,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
             file.read(buffer + 4, toRead);
             bool blockAcked = false;
             for (int i = 0; i < RETRIES && !blockAcked; i++) {
-                cout << "sending bytes: " << toRead << "in block" << curblock << endl;
+                cout << "sending block " << curblock << " of data" << endl;
                 int status = sendto(sockfd, (const char*)buffer, 4 + toRead, 0, (const struct sockaddr*)&server, len);
                 alarm(TIMEOUT);
                 int bytesRead = 0;
