@@ -108,9 +108,9 @@ int startTransfer(int port, const char* filename, const short opcode) {
             //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !transAcked) {
             alarm(TIMEOUT);
             flag = true;
-            //while (flag && bytesRead <= 0) {
-                bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, 0, (struct sockaddr*)&server, (socklen_t*)&len);
-            //}
+            while (flag && bytesRead <= 0) {
+                bytesRead = (int)recvfrom(sockfd, ack, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
+            }
             alarm(0);
             if (bytesRead >= 4) {
                 cout << "packet recieved" << endl;
@@ -176,8 +176,9 @@ int startTransfer(int port, const char* filename, const short opcode) {
                 alarm(TIMEOUT);
                 int bytesRead = 0;
                 flag = true;
-                //while (bytesRead <= 0 && flag) {
-                    (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, 0, (struct sockaddr*)&server, (socklen_t*)&len);
+                while (bytesRead <= 0 && flag) {
+                    recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
+                }
                 if (bytesRead < 0) {
                     cout << "recv error: " << strerror(errno) << endl;
                 }
