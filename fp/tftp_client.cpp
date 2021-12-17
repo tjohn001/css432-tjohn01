@@ -7,6 +7,8 @@ using namespace std;
 
 //handler from alarm - doesn't need to do anything
 static void handler(int signum) {
+    cout << "Handling timeout" << endl;
+    alarm(0);
     signal(SIGALRM, handler);
 }
 
