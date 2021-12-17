@@ -57,9 +57,12 @@ int startTransfer(int port, const char* filename, const short opcode) {
         cout << "RRQ " << filename << endl;
         int status = sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
         if (status < 0) {
+            int error_code;
+            int error_code_size = sizeof(error_code);
+            getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error_code, (socklen_t*)&error_code_size);
+            cout << "socket error: " << strerror(error_code);
             cout << "send error: " << strerror(errno) << endl;
             cout << "ptr - buffer: " << (ptr - buffer) << endl;
-
         }
         ofstream file(filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
