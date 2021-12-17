@@ -1,8 +1,14 @@
 
 //#pragma once
 #include "tftp.h"
+#include <signal.h>
 
 using namespace std;
+
+static void handler(int signum) {
+    cout << "Handling timeout" << endl;
+    //signal(SIGALRM, handler);
+}
 
 //method for handling creating connection to server
 //takes in port #, server address, number of iterations to run, number of buffers, size of buffers, and the type of sending method to use
@@ -11,7 +17,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
     int sockfd;
     char buffer[MAXLINE];
     struct sockaddr_in server;
-
+    signal(SIGALRM, handler);
     // Creating socket file descriptor
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
