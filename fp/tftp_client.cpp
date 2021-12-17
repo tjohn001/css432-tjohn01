@@ -6,7 +6,7 @@ using namespace std;
 
 //method for handling creating connection to server
 //takes in port #, server address, number of iterations to run, number of buffers, size of buffers, and the type of sending method to use
-int startTransfer(const char* port, const char* filename, const short opcode) {
+int startTransfer(int port, const char* filename, const short opcode) {
 
     int sockfd;
     char buffer[MAXLINE];
@@ -24,7 +24,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
 
     // Filling server information
     server.sin_family = AF_INET;
-    server.sin_port = htons(PORT);
+    server.sin_port = htonl(port);
     server.sin_addr.s_addr = inet_addr(HOST_ADDRESS);
 
     struct timeval timeSent;
@@ -155,13 +155,6 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
             for (int i = 0; i < RETRIES && !blockAcked; i++) {
                 cout << "sending bytes: " << toRead << "in block" << curblock << endl;
                 int status = sendto(sockfd, (const char*)buffer, 4 + toRead, 0, (const struct sockaddr*)&server, len);
-                if (status < 0) {
-                    cout << "sending error" << endl;
-                    continue;
-                }
-                //gettimeofday(&start_time, NULL);
-                //gettimeofday(&cur_time, NULL);
-                //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
                 alarm(TIMEOUT);
                 int bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
                 if (bytesRead < 0) {
@@ -194,8 +187,6 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                 if (!blockAcked) {
                     cout << "timed out waiting for ack, retrying..." << endl;
                 }
-                //gettimeofday(&cur_time, NULL);
-                //}
             }
             if (!blockAcked) {
                 cout << "retries failed, session ended" << endl;
@@ -212,16 +203,42 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
 //main method, server should take 6 arguments
 //server port number, server port address, number of iterations, number of buffers, size of each buffer, and the type of operation to perform
 int main(int argc, char* argv[]) {
-    /*if (argc != 7) { //check that correct # of arguments were entered
-        cerr << "Wrong number of arguments entered" << endl;
+    
+    int opcode = 0;
+    const char* filename;
+    int port = PORT;
+
+    if (argc == 3 || argc == 5) {
+        for (int i = 1; i < argc-1; i++) {
+            if (argv[i] == "-w") {
+                opcode = 2;
+                filename = argv[++i];
+                if (access(filename, F_OK) == -1) {
+                    cout << "file does not exist" << endl;
+                }
+            }
+            else if (argv[i] == "-r") {
+                opcode = 1;
+                filename = argv[++i]; 
+            }
+            else if (argv[i] == "-p") {
+                port = stoi(argv[++i]);
+                if (port < 0) {
+                    cout << "bad port" << endl;
+                    exit(1);
+                }
+            }
+        }
+    }
+    else {
+        cout << "wrong number of arguments" << endl;
         exit(1);
     }
-    if (stoi(argv[4]) * stoi(argv[5]) != 1500) { //check that resulting buffer size = 1500
-        cerr << "nbufs * bufsize must equal 1500" << endl;
+    if (opcode != 1 && opcode != 2) {
+        cout << "bad argument" << endl;
         exit(1);
-    }*/
-
-    return startTransfer("54948", "test.txt", 2);
+    }
+    return startTransfer(port, filename, 2);
 
     //return startTransfer(argv[1], argv[2], stoi(argv[3]), stoi(argv[4]), stoi(argv[5]), stoi(argv[6]));
 }

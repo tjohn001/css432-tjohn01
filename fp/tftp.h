@@ -86,7 +86,6 @@ public:
         }
     }
     virtual bool start(string filename) {
-        cout << "running start" << endl;
         file = fstream(filename, fstream::in | fstream::ate | fstream::binary);
         if (file.is_open() == false || !file.good()) {
             *((short*)buffer) = htons(5);
@@ -101,7 +100,7 @@ public:
         long end = file.tellg();
         file.seekg(0, ios::beg);
         size = end - file.tellg();
-        cout << "start finished" << endl;
+        cout << "Starting read transaction: " << filename << ", " << tid;
         curStep = PROGRESS;
         return true;
     }
@@ -217,6 +216,7 @@ public:
             return false;
         }*/
         file.seekg(0, ios::beg);
+        cout << "Starting write transaction: " << filename << ", " << tid;
         lastack = -1;
         curblock = 0;
         curStep = PROGRESS;

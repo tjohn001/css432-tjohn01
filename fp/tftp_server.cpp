@@ -24,6 +24,16 @@ WriteRequest* findClientInWRQQueue(vector<WriteRequest> queue, sockaddr_in clien
 
 //main method, server should take 2 args - the port number and the number of iterations
 int main(int argc, char* argv[]) {
+    int port = PORT;
+    if (argc == 3) {
+        if (argv[1] == "-p") {
+            port = stoi(argv[2]);
+            if (port < 0) {
+                cout << "bad port" << endl;
+                exit(1);
+            }
+        }
+    }
     //setup server socket
     int sockfd;
     char buffer[MAXLINE];
@@ -44,7 +54,7 @@ int main(int argc, char* argv[]) {
     // Filling server information
     server.sin_family = AF_INET; // IPv4
     server.sin_addr.s_addr = INADDR_ANY;
-    server.sin_port = htons(PORT);
+    server.sin_port = htons(port);
 
     // Bind the socket with the server address
     if (bind(sockfd, (const struct sockaddr*)&server, sizeof(server)) < 0) {
@@ -78,7 +88,7 @@ int main(int argc, char* argv[]) {
                 ptr += filename.length() + 1;
                 string mode(ptr);
 
-                if (mode != "octet") {
+                if (filename.find('/') != -1 || filename.find('\\') != -1) {
                     *((short*)buffer) = htons(5);
                     *((short*)(buffer + 2)) = htons(4);
                     const char* error = "This server only supports octet mode\0";
@@ -86,9 +96,15 @@ int main(int argc, char* argv[]) {
                     strcpy(buffer + 4, error);
                     sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
                 }
-
-                cout << "opcode: " << opcode << ", filename: " << filename << ", mode: " << mode << endl; 
-                if (opcode == 1) {
+                else if (mode != "octet") {
+                    *((short*)buffer) = htons(5);
+                    *((short*)(buffer + 2)) = htons(4);
+                    const char* error = "This server only supports octet mode\0";
+                    cout << error << endl;
+                    strcpy(buffer + 4, error);
+                    sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
+                } 
+                else if (opcode == 1) {
                     bool tidExists = false;
                     for (auto i = readVector.begin(); i != readVector.end(); i++) {
                         if (i->tid = ntohs(client.sin_port)) {
