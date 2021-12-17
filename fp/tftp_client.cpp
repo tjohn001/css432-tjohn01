@@ -20,7 +20,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
     int sockfd;
     char buffer[MAXLINE];
     struct sockaddr_in server;
-    signal(SIGALRM, handler);
+    //signal(SIGALRM, handler);
     // Creating socket file descriptor
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
@@ -58,6 +58,8 @@ int startTransfer(int port, const char* filename, const short opcode) {
         int status = sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
         if (status < 0) {
             cout << "send error: " << strerror(errno) << endl;
+            cout << "ptr - buffer: " << (ptr - buffer) << endl;
+
         }
         ofstream file(filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
@@ -71,6 +73,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
                 cout << "trying to recieve data" << endl;
                 //alarm(TIMEOUT);
                 int bytesRead = recvfrom(sockfd, buffer, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)&server, (socklen_t*)&len);
+
                 if (bytesRead < 0) {
                     cout << "recv error: " << strerror(errno);
                 }
