@@ -36,9 +36,9 @@ int startTransfer(int port, const char* filename, const short opcode) {
     server.sin_port = htonl(PORT);
     server.sin_addr.s_addr = inet_addr(HOST_ADDRESS);
 
-    struct timeval timeSent;
-    timeSent.tv_sec = TIMEOUT; /* seconds */
-    timeSent.tv_usec = 0;
+    /*struct timeval timeSent;
+    timeSent.tv_sec = TIMEOUT; 
+    timeSent.tv_usec = 0;*/
 
     int len = sizeof(server);
 
@@ -54,8 +54,8 @@ int startTransfer(int port, const char* filename, const short opcode) {
     *ptr = 0;
 
     if (opcode == 1) {
-        sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
         cout << "RRQ " << filename << endl;
+        sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
         ofstream file (filename, ios::binary | std::ofstream::trunc);
         file.seekp(0, ios::beg);
         int data = 0;
@@ -235,16 +235,17 @@ int main(int argc, char* argv[]) {
     }
     else if (flag == "-w") {
         opcode = 2;
+        if (access(filename, F_OK) == -1) {
+            cout << "file does not exist" << endl;
+            exit(1);
+        }
     }
     else {
         cout << "first flag must be -r or -w" << endl;
         exit(1);
     }
     filename = argv[2];
-    if (access(filename, F_OK) == -1) {
-        cout << "file does not exist" << endl;
-        exit(1);
-    }
+    
     if (argc == 5) {
         port = stoi(argv[4]);
         if (port < 0) {
