@@ -137,11 +137,7 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
         file.seekg(0, ios::beg);
         long size = end - file.tellg();
         cout << "start: " << file.tellg() << " end: " << end << " size: " << size << endl;
-        struct sockaddr_in data;
-        memset(&data, 0, sizeof(data));
         int len = sizeof(server);
-        int dataLen = sizeof(data);
-        char buffer[MAXLINE];
         char dataBuf[MAXLINE];
         int toRead, curblock = 1;
         do {
@@ -167,7 +163,10 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                 //gettimeofday(&cur_time, NULL);
                 //while (cur_time.tv_sec - start_time.tv_sec < TIMEOUT && !blockAcked) {
                 alarm(TIMEOUT);
-                int bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_WAITALL, (struct sockaddr*)&data, (socklen_t*)&dataLen);
+                int bytesRead = (int)recvfrom(sockfd, (char*)dataBuf, MAXLINE, MSG_WAITALL, (struct sockaddr*)&server, (socklen_t*)&len);
+                if (bytesRead < 0) {
+                    cout << "recv error: " << strerror(errno) << endl;
+                }
                 alarm(0);
                 if (bytesRead >= 4) {
                     cout << "packet recieved" << endl;
@@ -187,6 +186,9 @@ int startTransfer(const char* port, const char* filename, const short opcode) {
                         else if (ntohs(*((short*)(dataBuf + 2))) != curblock) {
                             cout << "wrong ack recieved" << endl;
                         }
+                    }
+                    else if (ntohs(*((short*)ack)) != 4) {
+                        cout << "wrong packet type" << ntohs(*((short*)ack)) << endl;
                     }
                 }
                 if (!blockAcked) {
