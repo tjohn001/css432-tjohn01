@@ -71,7 +71,10 @@ int startTransfer(int port, const char* filename, const short opcode) {
     //read requests
     if (opcode == 1) {
         cout << "RRQ " << filename << endl;
-        sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len); //send request
+        int status = sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len); //send request
+        if (status < 0) {
+            cout << strerror(errno);
+        }
         ofstream file(filename, ios::binary | std::ofstream::trunc); //open file
         file.seekp(0, ios::beg); //start at front of file
         int data = 0; //track size of data block
