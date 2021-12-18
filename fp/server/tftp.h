@@ -32,10 +32,6 @@ public:
     short curblock, lastack; //current data block and last ACK recieved
     timeval timeSent; //time that last packet was sent
     STEP curStep = START; //current operation being performed
-    virtual STEP nextStep(timeval curtime) = 0; //calculate what next operation to perform is
-    virtual bool start(string filename) = 0; //start transaction, MUST be called before performing any other operations
-    virtual bool send() = 0; //send packet
-    virtual bool recieve(char* in, int nbytes) = 0; //recieve packet
 };
 //class for RRQs
 class ReadRequest : public Transaction {
