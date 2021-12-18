@@ -43,7 +43,7 @@ public:
     virtual bool send() = 0; //send packet
     virtual bool recieve(char* in) = 0; //recieve packet
 };
-
+//class for RRQs
 class ReadRequest : public Transaction {
 public:
     char buffer[MAXLINE]; //buffer to read file into
@@ -55,7 +55,7 @@ public:
     bool send(); //send data packet
     bool recieve(char* in, int nbytes); //recieves 4 byte ACK
 };
-
+//class for WRQs
 class WriteRequest : public Transaction {
 public:
     int lastPacketSize = MAXLINE; //size of last packet recieved

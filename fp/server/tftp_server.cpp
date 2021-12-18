@@ -7,17 +7,20 @@ using namespace std;
 
 
 
-pthread_mutex_t read_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t write_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t read_lock = PTHREAD_MUTEX_INITIALIZER; //locks access to the read vector
+pthread_mutex_t write_lock = PTHREAD_MUTEX_INITIALIZER; //locks acces to the write vector
 
+//iterates through each vector and updates their state, calling the relevant method
 void* update_transactions(void* ptr) {
     Vectors* vecs = (Vectors*)ptr;
     vector<ReadRequest>* readVector = vecs->read;
     vector<WriteRequest>* writeVector = vecs->write;
+    struct timeval curtime;
     while (true) {
         pthread_mutex_lock(&read_lock);
+        gettimeofday(&curtime, NULL); //need current time to check for retries
         for (auto i = readVector->begin(); i != readVector->end() && !readVector->empty(); i++) {
-            STEP step = i->nextStep();
+            STEP step = i->nextStep(curtime); //get next operation
             switch (step) {
             case CLOSE:
                 cout << "Closing transaction " << "[" << i->tid << "]" << endl;
@@ -35,8 +38,9 @@ void* update_transactions(void* ptr) {
         }
         pthread_mutex_unlock(&read_lock);
         pthread_mutex_lock(&write_lock);
+        gettimeofday(&curtime, NULL);
         for (auto i = writeVector->begin(); i != writeVector->end() && !writeVector->empty(); i++) {
-            STEP step = i->nextStep();
+            STEP step = i->nextStep(curtime);
             switch (step) {
             case CLOSE:
                 cout << "Closing transaction " << "[" << i->tid << "]" << endl;
@@ -56,6 +60,16 @@ void* update_transactions(void* ptr) {
 
 //main method, server should take 2 args - the port number and the number of iterations
 int main(int argc, char* argv[]) {
+
+    int port = PORT;
+    if (argc == 3 && string(argv[1]) == "-p") { //allow to set port
+        port = stoi(argv[2]);
+        if (port < 0) {
+            cout << "bad port" << endl;
+            exit(1);
+        }
+    }
+
     //setup server socket
     int sockfd;
     char buffer[MAXLINE];
@@ -115,14 +129,17 @@ int main(int argc, char* argv[]) {
                 string filename(ptr);
                 ptr += filename.length() + 1;
                 string mode(ptr);
-
-                cout << filename << endl;
-                for (char* i = ptr - (filename.length() + 1); i < ptr; i++) {
-                    cout << *i;
+                cout << "opcode: " << opcode << ", filename: " << filename << ", mode: " << mode << endl;
+                
+                if (filename.find('/') != -1 || filename.find('\\') != -1) { //do not allow / or \ in filename
+                    *((short*)buffer) = htons(5);
+                    *((short*)(buffer + 2)) = htons(3);
+                    const char* error = "Attempted to access file path\0";
+                    cout << error << endl;
+                    strcpy(buffer + 4, error);
+                    sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
                 }
-                cout << endl;
-
-                if (mode != "octet") {
+                else if (mode != "octet") {
                     *((short*)buffer) = htons(5);
                     *((short*)(buffer + 2)) = htons(4);
                     const char* error = "This server only supports octet mode\0";
@@ -130,9 +147,7 @@ int main(int argc, char* argv[]) {
                     strcpy(buffer + 4, error);
                     sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
                 }
-
-                cout << "opcode: " << opcode << ", filename: " << filename << ", mode: " << mode << endl;
-                if (opcode == 1) {
+                else if (opcode == 1) {
                     pthread_mutex_lock(&read_lock);
                     bool tidExists = false;
                     for (auto i = readVector.begin(); i != readVector.end(); i++) {
@@ -185,7 +200,7 @@ int main(int argc, char* argv[]) {
                     if (i->tid == ntohs(client.sin_port)) {
                         char in[4];
                         bcopy(buffer, in, 4);
-                        i->recieve(in);
+                        i->recieve(in, 4);
                         break;
                     }
                 }
