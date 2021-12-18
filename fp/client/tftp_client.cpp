@@ -47,8 +47,6 @@ int startTransfer(int port, const char* filename, const short opcode) {
 
     memset(&server, 0, sizeof(server));
 
-    cout << "Sending to server port " << port << endl;
-
     // Filling server information
     server.sin_family = AF_INET;
     server.sin_port = htonl(port);
@@ -282,10 +280,13 @@ int main(int argc, char* argv[]) {
 
     if (argc == 5 && string(argv[3]) == "-p") {
         port = stoi(argv[4]);
+        cout << "Entered port " << string(argv[4]);
         if (port < 0) {
             cout << "bad port" << endl;
             exit(1);
         }
+        
+        cout << "Sending to server port " << port << endl;
     }
 
     return startTransfer(port, filename, opcode);

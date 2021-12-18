@@ -64,13 +64,13 @@ int main(int argc, char* argv[]) {
     int port = PORT;
     if (argc == 3 && string(argv[1]) == "-p") { //allow to set port
         port = stoi(argv[2]);
+        cout << "port entered: " << string(argv[2]) << endl;
         if (port < 0) {
             cout << "bad port " << port << endl;
             exit(1);
-        }
-        cout << "Recieving on port " << port << endl;
+        }  
     }
-
+    cout << "Recieving on port " << port << endl;
     //setup server socket
     int sockfd;
     char buffer[MAXLINE];
