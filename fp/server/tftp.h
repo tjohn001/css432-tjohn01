@@ -21,12 +21,6 @@ using namespace std;
 #define TIMEOUT 2
 #define HOST_ADDRESS "10.158.82.39"
 
-//struct used for passing vectors to thread
-struct Vectors {
-    vector<ReadRequest>* read;
-    vector<WriteRequest>* write;
-};
-
 enum STEP { CLOSE, RETRY, WAIT, PROGRESS, START }; //phases of operations performed by Transactions
 
 //base class for read/write transactions
@@ -64,4 +58,11 @@ public:
     bool start(string filename); //open file and initialize variables
     bool send(); //send ACK
     bool recieve(char* in, int nbytes); //recieves DATA packet
+};
+
+//struct used for passing vectors to thread
+struct Vectors {
+public:
+    vector<ReadRequest>* read;
+    vector<WriteRequest>* write;
 };
