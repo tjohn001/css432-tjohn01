@@ -26,7 +26,7 @@ STEP ReadRequest::nextStep(timeval curtime) {
         return curStep;
     }
     else if (curBlockSize < 512 && lastack == curblock) { //close if end of transaction reached & ack recieved 
-        cout << "Read finished " << "[" << tid << "]" << endl;
+        cout << "Read finished, closing transaction " << "[" << tid << "]" << endl;
         curStep = CLOSE;
         return curStep;
     }
@@ -100,10 +100,8 @@ bool ReadRequest::recieve(char* in, int nbytes) {
     cout << "recieving ack " << ntohs(*((short*)(in + 2))) << "[" << tid << "]" << endl;
     if (ntohs(*((short*)(in + 2))) == curblock) { //if correct ack recieved, update 
         lastack = ntohs(*((short*)(in + 2)));
-        cout << curblock << " block acked" << endl;
     }
     else if (ntohs(*((short*)(in + 2))) != curblock) { //discard out of order acks
-        cout << "wrong ack recieved: " << lastack << endl;
         return false;
     }
     return true;
@@ -131,7 +129,7 @@ STEP WriteRequest::nextStep(timeval curtime) {
         return curStep;
     }
     else if (lastack == curblock && lastPacketSize < MAXLINE) { //close after ack for last packet sent
-        cout << "Write finished " << "[" << tid << "]" << endl;
+        cout << "Write finished, closing transaction " << "[" << tid << "]" << endl;
         curStep = CLOSE;
         return curStep;
     }

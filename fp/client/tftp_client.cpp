@@ -80,7 +80,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
         int data = 0; //track size of data block
         bool transAcked = false; //whether initial transaction request was acknoledged
         bool recievedData = false; //whether recieved data this round
-        short curblock = 1;
+        short curblock = 0;
         //loop until last packet recieved, error occured, or retries excceded
         do {
             recievedData = false;
@@ -283,12 +283,10 @@ int main(int argc, char* argv[]) {
 
     if (argc == 5 && string(argv[3]) == "-p") {
         port = stoi(string(argv[4]));
-        cout << "Entered port " << string(argv[4]);
         if (port <= 0) {
             cout << "bad port" << endl;
             exit(1);
         }
-        
         cout << "Sending to server port " << port << endl;
     }
 

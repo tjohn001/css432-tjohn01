@@ -23,7 +23,6 @@ void* update_transactions(void* ptr) {
             STEP step = i->nextStep(curtime); //get next operation
             switch (step) {
             case CLOSE:
-                cout << "Closing transaction " << "[" << i->tid << "]" << endl;
                 i = readVector->erase(i);
                 break;
             case RETRY:
@@ -43,7 +42,6 @@ void* update_transactions(void* ptr) {
             STEP step = i->nextStep(curtime);
             switch (step) {
             case CLOSE:
-                cout << "Closing transaction " << "[" << i->tid << "]" << endl;
                 i = writeVector->erase(i);
                 break;
             case RETRY:
@@ -64,7 +62,6 @@ int main(int argc, char* argv[]) {
     int port = PORT;
     if (argc == 3 && string(argv[1]) == "-p") { //allow to set port
         port = stoi(string(argv[2]));
-        cout << "port entered: " << string(argv[2]) << endl;
         if (port < 0) {
             cout << "bad port " << port << endl;
             exit(1);
