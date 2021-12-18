@@ -138,7 +138,6 @@ int startTransfer(int port, const char* filename, const short opcode) {
                 exit(0);
             }
         } while (data == 512);
-        cout << "done" << endl;
         file.close();
     }
     //write request

@@ -183,7 +183,7 @@ bool WriteRequest::send() { //send ack
         curStep = WAIT;
         lastack = curblock;
         retries = 0;
-        cout << "ACK block " << lastack << " [" << tid << "]" << endl;
+        cout << "Sending ACK block " << lastack << " [" << tid << "]" << endl;
     }
     else { //retry
         curStep = WAIT;
