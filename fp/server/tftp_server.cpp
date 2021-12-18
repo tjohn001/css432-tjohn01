@@ -61,11 +61,11 @@ void* update_transactions(void* ptr) {
 //main method, server should take 2 args - the port number and the number of iterations
 int main(int argc, char* argv[]) {
 
-    short port = PORT;
+    int port = PORT;
     if (argc == 3 && string(argv[1]) == "-p") { //allow to set port
         port = stoi(argv[2]);
         if (port < 0) {
-            cout << "bad port" << endl;
+            cout << "bad port " << port << endl;
             exit(1);
         }
         cout << "Recieving on port " << port << endl;
@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
     // Filling server information
     server.sin_family = AF_INET; // IPv4
     server.sin_addr.s_addr = INADDR_ANY;
-    server.sin_port = htons(PORT);
+    server.sin_port = htonl(PORT);
 
     // Bind the socket with the server address
     if (bind(sockfd, (const struct sockaddr*)&server, sizeof(server)) < 0) {

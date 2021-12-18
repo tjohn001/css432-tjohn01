@@ -31,7 +31,7 @@ static void handler(int signum) {
 
 //method for handling creating connection to server
 //takes in port #, server address, number of iterations to run, number of buffers, size of buffers, and the type of sending method to use
-int startTransfer(short port, const char* filename, const short opcode) {
+int startTransfer(int port, const char* filename, const short opcode) {
 
     int sockfd;
     char buffer[MAXLINE];
@@ -51,7 +51,7 @@ int startTransfer(short port, const char* filename, const short opcode) {
 
     // Filling server information
     server.sin_family = AF_INET;
-    server.sin_port = htons(port);
+    server.sin_port = htonl(port);
     server.sin_addr.s_addr = inet_addr(HOST_ADDRESS);
 
     //struct timeval timeSent;
