@@ -49,7 +49,7 @@ int startTransfer(int port, const char* filename, const short opcode) {
 
     // Filling server information
     server.sin_family = AF_INET;
-    server.sin_port = htonl(port);
+    server.sin_port = htons(port);
     server.sin_addr.s_addr = inet_addr(HOST_ADDRESS);
 
     //struct timeval timeSent;
