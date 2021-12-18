@@ -279,9 +279,9 @@ int main(int argc, char* argv[]) {
     }
 
     if (argc == 5 && string(argv[3]) == "-p") {
-        port = stoi(argv[4]);
+        port = stoi(string(argv[4]));
         cout << "Entered port " << string(argv[4]);
-        if (port < 0) {
+        if (port <= 0) {
             cout << "bad port" << endl;
             exit(1);
         }

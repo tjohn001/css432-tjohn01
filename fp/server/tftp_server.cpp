@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
 
     int port = PORT;
     if (argc == 3 && string(argv[1]) == "-p") { //allow to set port
-        port = stoi(argv[2]);
+        port = stoi(string(argv[4]));
         cout << "port entered: " << string(argv[2]) << endl;
         if (port < 0) {
             cout << "bad port " << port << endl;
