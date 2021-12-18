@@ -19,7 +19,6 @@ using namespace std;
 #define PORT 51948
 #define RETRIES 10
 #define TIMEOUT 2
-#define HOST_ADDRESS "10.158.82.39"
 
 enum STEP { CLOSE, RETRY, WAIT, PROGRESS, START }; //phases of operations performed by Transactions
 
