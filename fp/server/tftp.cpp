@@ -53,7 +53,7 @@ bool ReadRequest::start(string filename) {
         const char* error = "Could not open file\0";
         cout << error << endl;
         strcpy(buffer + 4, error);
-        sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
+        sendto(sockfd, (const char*)buffer, 4 + strlen(error)+1, 0, (const struct sockaddr*)&client, len);
         curStep = CLOSE;
         return false;
     }
@@ -157,7 +157,7 @@ bool WriteRequest::start(string filename) {
         const char* error = "File already exists\0";
         cout << "WRQ: attempted to write to existing file " << "[" << tid << "]" << endl;
         strcpy(buffer + 4, error);
-        sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
+        sendto(sockfd, (const char*)buffer, 4 + strlen(error) + 1, 0, (const struct sockaddr*)&client, len);
         curStep = CLOSE;
         return false;
     }
@@ -169,7 +169,7 @@ bool WriteRequest::start(string filename) {
         const char* error = "Could not open file\0";
         cout << "WRQ: could not open file " << "[" << tid << "]" << endl;
         strcpy(buffer + 4, error);
-        sendto(sockfd, (const char*)buffer, 4 + sizeof(error), 0, (const struct sockaddr*)&client, len);
+        sendto(sockfd, (const char*)buffer, 4 + strlen(error)+1, 0, (const struct sockaddr*)&client, len);
         curStep = CLOSE;
         return false;
     }

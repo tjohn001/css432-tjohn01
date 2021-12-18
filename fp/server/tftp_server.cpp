@@ -17,7 +17,7 @@ void* update_transactions(void* ptr) {
     vector<WriteRequest>* writeVector = vecs->write;
     struct timeval curtime;
     while (true) {
-        pthread_mutex_lock(&read_lock);
+        pthread_mutex_lock(&read_lock); //accessing read vector
         gettimeofday(&curtime, NULL); //need current time to check for retries
         for (auto i = readVector->begin(); i != readVector->end() && !readVector->empty(); i++) {
             STEP step = i->nextStep(curtime); //get next operation
@@ -37,8 +37,8 @@ void* update_transactions(void* ptr) {
             }
         }
         pthread_mutex_unlock(&read_lock);
-        pthread_mutex_lock(&write_lock);
-        gettimeofday(&curtime, NULL);
+        pthread_mutex_lock(&write_lock); //accessing write vector
+        gettimeofday(&curtime, NULL); //get current time to check for retries
         for (auto i = writeVector->begin(); i != writeVector->end() && !writeVector->empty(); i++) {
             STEP step = i->nextStep(curtime);
             switch (step) {
@@ -61,13 +61,14 @@ void* update_transactions(void* ptr) {
 //main method, server should take 2 args - the port number and the number of iterations
 int main(int argc, char* argv[]) {
 
-    int port = PORT;
+    short port = PORT;
     if (argc == 3 && string(argv[1]) == "-p") { //allow to set port
         port = stoi(argv[2]);
         if (port < 0) {
             cout << "bad port" << endl;
             exit(1);
         }
+        cout << "Recieving on port " << port << endl;
     }
 
     //setup server socket
@@ -90,7 +91,7 @@ int main(int argc, char* argv[]) {
     // Filling server information
     server.sin_family = AF_INET; // IPv4
     server.sin_addr.s_addr = INADDR_ANY;
-    server.sin_port = htons(PORT);
+    server.sin_port = htonl(PORT);
 
     // Bind the socket with the server address
     if (bind(sockfd, (const struct sockaddr*)&server, sizeof(server)) < 0) {

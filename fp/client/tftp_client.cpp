@@ -31,7 +31,7 @@ static void handler(int signum) {
 
 //method for handling creating connection to server
 //takes in port #, server address, number of iterations to run, number of buffers, size of buffers, and the type of sending method to use
-int startTransfer(int port, const char* filename, const short opcode) {
+int startTransfer(short port, const char* filename, const short opcode) {
 
     int sockfd;
     char buffer[MAXLINE];
@@ -46,6 +46,8 @@ int startTransfer(int port, const char* filename, const short opcode) {
     const int yes = 0;
 
     memset(&server, 0, sizeof(server));
+
+    cout << "Sending to server port " << port << endl;
 
     // Filling server information
     server.sin_family = AF_INET;
@@ -92,16 +94,12 @@ int startTransfer(int port, const char* filename, const short opcode) {
                 if (bytesRead <= 0) { //didn't recieve data, need to resent
                     if (transAcked == false) { //if didn't recieve response to initial request, send it again
                         cout << "Timed out: resending RRQ" << endl;
-                        ptr = buffer;
                         *((short*)ptr) = htons(opcode);
                         ptr += 2;
                         strcpy(ptr, filename);
-                        ptr += sizeof(filename);
-                        *ptr = 0;
-                        ptr++;
-                        strcpy(ptr, "octet");
-                        ptr += sizeof("octet");
-                        *ptr = 0;
+                        ptr += strlen(filename) + 1;
+                        strcpy(ptr, "octet\0");
+                        ptr += strlen("octet\0") + 1;
                         sendto(sockfd, buffer, ptr - buffer, 0, (const struct sockaddr*)&server, len);
                     }
                     else { //if didn't recieve response, send ACK again
