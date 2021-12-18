@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
     // Filling server information
     server.sin_family = AF_INET; // IPv4
     server.sin_addr.s_addr = INADDR_ANY;
-    server.sin_port = htonl(PORT);
+    server.sin_port = htons(PORT);
 
     // Bind the socket with the server address
     if (bind(sockfd, (const struct sockaddr*)&server, sizeof(server)) < 0) {
