@@ -41,7 +41,7 @@ public:
     virtual STEP nextStep(timeval curtime) = 0; //calculate what next operation to perform is
     virtual bool start(string filename) = 0; //start transaction, MUST be called before performing any other operations
     virtual bool send() = 0; //send packet
-    virtual bool recieve(char* in) = 0; //recieve packet
+    virtual bool recieve(char* in, int nbytes) = 0; //recieve packet
 };
 //class for RRQs
 class ReadRequest : public Transaction {
